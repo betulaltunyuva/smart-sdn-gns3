@@ -7,3 +7,27 @@ venv/
 logs/
 *.log
 datasets/*.csv
+
+# IDE / editor
+.vscode/
+.idea/
+
+# Network captures
+*.pcap
+*.pcapng
+
+# Virtual machines / images
+*.vdi
+*.vmdk
+*.qcow2
+*.iso
+
+# Certificates / private keys
+*.pem
+*.key
+*.p12
+*.pfx
+
+# OS files
+.DS_Store
+Thumbs.db
