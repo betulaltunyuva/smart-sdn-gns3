@@ -5,6 +5,9 @@ Smart SDN (GNS3) - OS-Ken OpenFlow 1.3 Learning Switch Controller
   - Aşama 4.2: LLDP tabanlı dinamik link discovery (os_ken.topology)
   - Aşama 4.3: Switch/linklerden NetworkX graph (topology/topology_manager.py)
   - Aşama 5.1: Graph üzerinden dinamik shortest path (yalnızca loglama)
+  - Aşama 6  : Multi-agent iskeleti (agents/, utils/event_bus.py)
+               LINK_ADDED/LINK_REMOVED -> Monitoring -> Failure -> Routing
+               -> Recovery (yalnızca loglama, flow kurulmaz)
 
 GNS3 içindeki Open vSwitch node'ları ile çalışmak üzere tasarlanmıştır.
 Yalnızca OpenFlow 1.3 destekler.
@@ -50,6 +53,11 @@ except ImportError as e:
     TopologyManager = None
     _TOPOLOGY_IMPORT_ERROR = e
 
+# Aşama 6: multi-agent iskeleti (yalnızca standart kütüphane kullanır)
+from utils.event_bus import EventBus, TOPO_LINK_ADDED, TOPO_LINK_REMOVED
+from agents import (MonitoringAgent, FailureDetectionAgent, RoutingAgent,
+                    RecoveryAgent)
+
 
 class SDNController(app_manager.OSKenApp):
     """Basit OpenFlow 1.3 MAC-learning switch uygulaması."""
@@ -84,6 +92,16 @@ class SDNController(app_manager.OSKenApp):
         self.topology = None
         if TopologyManager is not None:
             self.topology = TopologyManager(logger=self.logger)
+        # Multi-agent zinciri (Aşama 6). Agentlar yalnızca EventBus
+        # üzerinden haberleşir; RoutingAgent yukarıdaki aynı TopologyManager
+        # örneğini (canlı graph) kullanır.
+        self.event_bus = EventBus(logger=self.logger)
+        self.monitoring_agent = MonitoringAgent(self.event_bus, self.logger)
+        self.failure_agent = FailureDetectionAgent(self.event_bus,
+                                                   self.logger)
+        self.routing_agent = RoutingAgent(self.event_bus, self.topology,
+                                          self.logger)
+        self.recovery_agent = RecoveryAgent(self.event_bus, self.logger)
         self.logger.info("SDN Controller başlatıldı (OpenFlow 1.3)")
         if self.topology is None:
             self.logger.warning("Topoloji graph KAPALI (%s); kurulum: "
@@ -200,6 +218,7 @@ class SDNController(app_manager.OSKenApp):
                          src_dpid, src_port, dst_dpid, dst_port,
                          len(self.links))
         self._update_topology()
+        self.event_bus.publish(TOPO_LINK_ADDED, dict(self.links[key]))
 
     @set_ev_cls(topo_event.EventLinkDelete)
     def link_delete_handler(self, ev):
@@ -224,6 +243,9 @@ class SDNController(app_manager.OSKenApp):
                          info["dst_dpid"], info["dst_port"],
                          len(self.links))
         self._update_topology()
+        # Graph güncellendikten SONRA agent zinciri tetiklenir; böylece
+        # RoutingAgent arızalı linkin çıkarıldığı graph üzerinde hesap yapar.
+        self.event_bus.publish(TOPO_LINK_REMOVED, dict(info))
 
     # ------------------------------------------------------------------
     # Topoloji graph güncelleme (Aşama 4.3)
