@@ -39,6 +39,13 @@ PORT_METRICS = "PORT_METRICS"
 # Aşama 6.3: FailureDetectionAgent -> RoutingAgent (Aşama 6.4); port
 # sağlık durumu değişimi (HEALTHY / DEGRADED / FAILED).
 PORT_HEALTH_CHANGED = "PORT_HEALTH_CHANGED"
+# Aşama 6.5: Controller -> RecoveryAgent
+# Host tarafı (ISL olmayan veri) porttan gelen unicast kaynak MAC:
+# {"mac", "dpid", "port"}. Her PacketIn'de yayınlanır, loglanmaz.
+HOST_SEEN = "HOST_SEEN"
+# Controller'ın 5 sn'lik istatistik döngüsünden periyodik tetik
+# (failback kararlılık süresi için; ayrı thread yok). {"now": monotonic}
+TIMER_TICK = "TIMER_TICK"
 
 
 class EventBus(object):

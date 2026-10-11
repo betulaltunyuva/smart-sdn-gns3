@@ -7,9 +7,11 @@ Smart SDN (GNS3) - OS-Ken OpenFlow 1.3 Learning Switch Controller
   - Aşama 5.1: Graph üzerinden dinamik shortest path (yalnızca loglama)
   - Aşama 6  : Multi-agent iskeleti (agents/, utils/event_bus.py)
                LINK_ADDED/LINK_REMOVED -> Monitoring -> Failure -> Routing
-               -> Recovery (yalnızca loglama, flow kurulmaz)
+               -> Recovery
   - Aşama 6.2: Periyodik OpenFlow 1.3 port istatistikleri
                (PortDesc + PortStats) -> MonitoringAgent metrikleri
+  - Aşama 6.5: RecoveryAgent seçilen alternatif yolu host-MAC'e özgü
+               recovery flowları ile uygular (RecoveryFlowOps üzerinden)
 
 GNS3 içindeki Open vSwitch node'ları ile çalışmak üzere tasarlanmıştır.
 Yalnızca OpenFlow 1.3 destekler.
@@ -60,9 +62,80 @@ except ImportError as e:
 # Aşama 6: multi-agent iskeleti (yalnızca standart kütüphane kullanır)
 from utils.event_bus import (EventBus, TOPO_LINK_ADDED, TOPO_LINK_REMOVED,
                              TOPO_SWITCH_REMOVED, PORT_STATUS_UPDATE,
-                             PORT_STATS_UPDATE)
+                             PORT_STATS_UPDATE, HOST_SEEN, TIMER_TICK)
 from agents import (MonitoringAgent, FailureDetectionAgent, RoutingAgent,
                     RecoveryAgent)
+from agents.recovery_agent import RECOVERY_FLOW_COOKIE
+
+
+class RecoveryFlowOps(object):
+    """Aşama 6.5: RecoveryAgent'a verilen MİNİMUM OpenFlow yeteneği.
+
+    Yalnızca aktif switchlere (controller.datapaths), yalnızca
+    in_port + eth_src + eth_dst eşleşmeli tek çıkışlı flow kurar/siler.
+    Cookie 0 (table-miss / LLDP) ile işlem reddedilir; silmeler her zaman
+    tam cookie maskesiyle yapılır. Her metod gönderim başarısını (bool)
+    döner; OpenFlow hata cevapları senkron beklenmez."""
+
+    _COOKIE_MASK = 0xffffffffffffffff
+
+    def __init__(self, controller):
+        self._ctl = controller
+
+    def dpids(self):
+        return sorted(self._ctl.datapaths)
+
+    def _dp(self, dpid, cookie):
+        if not cookie:
+            return None
+        return self._ctl.datapaths.get(dpid)
+
+    def add_flow(self, dpid, priority, cookie, in_port, eth_src, eth_dst,
+                 out_port):
+        datapath = self._dp(dpid, cookie)
+        if datapath is None:
+            return False
+        parser = datapath.ofproto_parser
+        match = parser.OFPMatch(in_port=in_port, eth_src=eth_src,
+                                eth_dst=eth_dst)
+        inst = [parser.OFPInstructionActions(
+            datapath.ofproto.OFPIT_APPLY_ACTIONS,
+            [parser.OFPActionOutput(out_port)])]
+        return bool(datapath.send_msg(parser.OFPFlowMod(
+            datapath=datapath, cookie=cookie, priority=priority,
+            match=match, instructions=inst)))
+
+    def delete_flow_strict(self, dpid, priority, cookie, in_port, eth_src,
+                           eth_dst):
+        return self._delete(dpid, cookie, "OFPFC_DELETE_STRICT", priority,
+                            in_port=in_port, eth_src=eth_src,
+                            eth_dst=eth_dst)
+
+    def delete_pair_flows(self, dpid, cookie, eth_src, eth_dst):
+        """Bu cookie'ye sahip, eth_src/eth_dst eşleşmeli (in_port ne olursa
+        olsun) flowları siler."""
+        return self._delete(dpid, cookie, "OFPFC_DELETE", 0,
+                            eth_src=eth_src, eth_dst=eth_dst)
+
+    def _delete(self, dpid, cookie, command, priority, **match_fields):
+        datapath = self._dp(dpid, cookie)
+        if datapath is None:
+            return False
+        ofproto = datapath.ofproto
+        parser = datapath.ofproto_parser
+        return bool(datapath.send_msg(parser.OFPFlowMod(
+            datapath=datapath, cookie=cookie, cookie_mask=self._COOKIE_MASK,
+            table_id=0, command=getattr(ofproto, command),
+            priority=priority, out_port=ofproto.OFPP_ANY,
+            out_group=ofproto.OFPG_ANY,
+            match=parser.OFPMatch(**match_fields))))
+
+    def barrier(self, dpid):
+        datapath = self._ctl.datapaths.get(dpid)
+        if datapath is None:
+            return False
+        return bool(datapath.send_msg(
+            datapath.ofproto_parser.OFPBarrierRequest(datapath)))
 
 
 class SDNController(app_manager.OSKenApp):
@@ -122,7 +195,10 @@ class SDNController(app_manager.OSKenApp):
                                                    self.logger)
         self.routing_agent = RoutingAgent(self.event_bus, self.topology,
                                           self.logger)
-        self.recovery_agent = RecoveryAgent(self.event_bus, self.logger)
+        self.recovery_agent = RecoveryAgent(
+            self.event_bus, self.logger, topology=self.topology,
+            flow_ops=RecoveryFlowOps(self),
+            learned_cookie=self.LEARNED_FLOW_COOKIE)
         # Aşama 6.2: aktif switchlerden periyodik port istatistiği iste
         self.stats_thread = hub.spawn(self._stats_loop)
         self.logger.info("SDN Controller başlatıldı (OpenFlow 1.3)")
@@ -152,6 +228,9 @@ class SDNController(app_manager.OSKenApp):
                                           ofproto.OFPCML_NO_BUFFER)]
         self.add_flow(datapath, 0, match, actions)
         self.logger.info("Table-miss flow eklendi: DPID=%016x", datapath.id)
+        # Aşama 6.5: önceki controller oturumundan kalmış olabilecek
+        # recovery flowları temizlenir (yalnızca recovery cookie'si)
+        self._delete_cookie_flows(datapath, RECOVERY_FLOW_COOKIE)
 
         # Features reply alındığında DPID kesin olarak bilinir. OF1.3'te
         # MAIN_DISPATCHER'a geçiş ayrıca PortDesc cevabına bağlı olduğundan,
@@ -334,13 +413,18 @@ class SDNController(app_manager.OSKenApp):
         # Eski topolojide öğrenilen portlar artık yanlış olabilir
         self.mac_to_port.clear()
         for datapath in list(self.datapaths.values()):
-            self._delete_learned_flows(datapath)
+            self._delete_cookie_flows(datapath, self.LEARNED_FLOW_COOKIE)
 
-    def _delete_learned_flows(self, datapath):
+    @staticmethod
+    def _delete_cookie_flows(datapath, cookie):
+        """Yalnızca verilen cookie'ye sahip flowları siler (cookie 0 =
+        table-miss/LLDP asla hedeflenmez)."""
+        if not cookie:
+            return
         ofproto = datapath.ofproto
         parser = datapath.ofproto_parser
         datapath.send_msg(parser.OFPFlowMod(
-            datapath=datapath, cookie=self.LEARNED_FLOW_COOKIE,
+            datapath=datapath, cookie=cookie,
             cookie_mask=0xffffffffffffffff, table_id=ofproto.OFPTT_ALL,
             command=ofproto.OFPFC_DELETE, out_port=ofproto.OFPP_ANY,
             out_group=ofproto.OFPG_ANY, match=parser.OFPMatch()))
@@ -377,6 +461,8 @@ class SDNController(app_manager.OSKenApp):
                 except Exception:
                     self.logger.exception("Port stats isteği gönderilemedi "
                                           "DPID=%016x", datapath.id)
+            # Aşama 6.5: RecoveryAgent failback zamanlayıcısı
+            self.event_bus.publish(TIMER_TICK, {"now": time.monotonic()})
             hub.sleep(self.STATS_INTERVAL)
 
     @staticmethod
@@ -493,6 +579,12 @@ class SDNController(app_manager.OSKenApp):
 
         # Kaynak MAC adresini (bu switch için) giriş portunda öğren
         self.mac_to_port[dpid][src] = in_port
+        # Aşama 6.5: host konumu yalnızca host tarafı veri portlarından
+        # (switchler arası/LLDP portu değil) RecoveryAgent'a bildirilir
+        if (self._is_data_port(ofproto, in_port)
+                and in_port not in self.isl_ports.get(dpid, ())):
+            self.event_bus.publish(HOST_SEEN, {"mac": src, "dpid": dpid,
+                                               "port": in_port})
 
         # Hedef port biliniyorsa oraya, değilse flood (döngüsüz)
         if dst in self.mac_to_port[dpid]:
