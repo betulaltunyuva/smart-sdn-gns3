@@ -36,8 +36,8 @@ PORT_STATS_UPDATE = "PORT_STATS_UPDATE"     # OFPPortStatsReply
 TOPO_SWITCH_REMOVED = "TOPO_SWITCH_REMOVED"
 # MonitoringAgent -> FailureDetectionAgent (Aşama 6.3)
 PORT_METRICS = "PORT_METRICS"
-# Aşama 6.3: FailureDetectionAgent -> (ileride Routing/AI); port sağlık
-# durumu değişimi (HEALTHY / DEGRADED / FAILED). Şu an subscriber yok.
+# Aşama 6.3: FailureDetectionAgent -> RoutingAgent (Aşama 6.4); port
+# sağlık durumu değişimi (HEALTHY / DEGRADED / FAILED).
 PORT_HEALTH_CHANGED = "PORT_HEALTH_CHANGED"
 
 
