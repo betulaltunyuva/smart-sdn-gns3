@@ -30,6 +30,12 @@ LINK_DOWN = "LINK_DOWN"
 LINK_FAILURE = "LINK_FAILURE"
 # RoutingAgent -> RecoveryAgent
 RECOVERY_REQUEST = "RECOVERY_REQUEST"
+# Aşama 6.2: Controller -> MonitoringAgent (periyodik OpenFlow istatistikleri)
+PORT_STATUS_UPDATE = "PORT_STATUS_UPDATE"   # OFPPortDescStatsReply
+PORT_STATS_UPDATE = "PORT_STATS_UPDATE"     # OFPPortStatsReply
+TOPO_SWITCH_REMOVED = "TOPO_SWITCH_REMOVED"
+# MonitoringAgent -> (ileride FailureDetectionAgent); şu an subscriber yok
+PORT_METRICS = "PORT_METRICS"
 
 
 class EventBus(object):

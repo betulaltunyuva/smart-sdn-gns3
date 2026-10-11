@@ -8,6 +8,8 @@ Smart SDN (GNS3) - OS-Ken OpenFlow 1.3 Learning Switch Controller
   - Aşama 6  : Multi-agent iskeleti (agents/, utils/event_bus.py)
                LINK_ADDED/LINK_REMOVED -> Monitoring -> Failure -> Routing
                -> Recovery (yalnızca loglama, flow kurulmaz)
+  - Aşama 6.2: Periyodik OpenFlow 1.3 port istatistikleri
+               (PortDesc + PortStats) -> MonitoringAgent metrikleri
 
 GNS3 içindeki Open vSwitch node'ları ile çalışmak üzere tasarlanmıştır.
 Yalnızca OpenFlow 1.3 destekler.
@@ -26,12 +28,14 @@ OVS tarafında (GNS3 Open vSwitch node'u içinde) örnek ayar:
 import logging
 import os
 import sys
+import time
 
 from os_ken.base import app_manager
 from os_ken.controller import ofp_event
 from os_ken.controller.handler import CONFIG_DISPATCHER, MAIN_DISPATCHER
 from os_ken.controller.handler import DEAD_DISPATCHER
 from os_ken.controller.handler import set_ev_cls
+from os_ken.lib import hub
 from os_ken.lib.packet import packet, ethernet, ether_types
 from os_ken.ofproto import ofproto_v1_3
 # os_ken.topology.event import edildiğinde os_ken.topology.switches uygulaması
@@ -54,7 +58,9 @@ except ImportError as e:
     _TOPOLOGY_IMPORT_ERROR = e
 
 # Aşama 6: multi-agent iskeleti (yalnızca standart kütüphane kullanır)
-from utils.event_bus import EventBus, TOPO_LINK_ADDED, TOPO_LINK_REMOVED
+from utils.event_bus import (EventBus, TOPO_LINK_ADDED, TOPO_LINK_REMOVED,
+                             TOPO_SWITCH_REMOVED, PORT_STATUS_UPDATE,
+                             PORT_STATS_UPDATE)
 from agents import (MonitoringAgent, FailureDetectionAgent, RoutingAgent,
                     RecoveryAgent)
 
@@ -64,6 +70,9 @@ class SDNController(app_manager.OSKenApp):
 
     # Yalnızca OpenFlow 1.3 kabul edilir
     OFP_VERSIONS = [ofproto_v1_3.OFP_VERSION]
+
+    # Aşama 6.2: port istatistik sorgulama aralığı (saniye)
+    STATS_INTERVAL = 5
 
     def __init__(self, *args, **kwargs):
         super(SDNController, self).__init__(*args, **kwargs)
@@ -102,6 +111,8 @@ class SDNController(app_manager.OSKenApp):
         self.routing_agent = RoutingAgent(self.event_bus, self.topology,
                                           self.logger)
         self.recovery_agent = RecoveryAgent(self.event_bus, self.logger)
+        # Aşama 6.2: aktif switchlerden periyodik port istatistiği iste
+        self.stats_thread = hub.spawn(self._stats_loop)
         self.logger.info("SDN Controller başlatıldı (OpenFlow 1.3)")
         if self.topology is None:
             self.logger.warning("Topoloji graph KAPALI (%s); kurulum: "
@@ -183,6 +194,7 @@ class SDNController(app_manager.OSKenApp):
                          "toplam aktif switch sayısı=%d",
                          dpid, len(self.datapaths))
         self._update_topology()
+        self.event_bus.publish(TOPO_SWITCH_REMOVED, {"dpid": dpid})
 
     # ------------------------------------------------------------------
     # Link discovery (LLDP): os_ken.topology.switches eventleri
@@ -265,6 +277,82 @@ class SDNController(app_manager.OSKenApp):
         for i, src in enumerate(dpids):
             for dst in dpids[i + 1:]:
                 self.topology.get_shortest_path(src, dst)
+
+    # ------------------------------------------------------------------
+    # Port istatistikleri (Aşama 6.2)
+    # ------------------------------------------------------------------
+    def _stats_loop(self):
+        """Her STATS_INTERVAL saniyede aktif switchlere PortDesc ve
+        PortStats isteği gönderir. hub.sleep ile bekler (busy loop yok);
+        cevaplar aşağıdaki handler'larda asenkron işlenir."""
+        while True:
+            for datapath in list(self.datapaths.values()):
+                try:
+                    self._request_port_stats(datapath)
+                except Exception:
+                    self.logger.exception("Port stats isteği gönderilemedi "
+                                          "DPID=%016x", datapath.id)
+            hub.sleep(self.STATS_INTERVAL)
+
+    @staticmethod
+    def _request_port_stats(datapath):
+        ofproto = datapath.ofproto
+        parser = datapath.ofproto_parser
+        # Önce port durumu, sonra sayaçlar: aynı TCP bağlantısında sırayla
+        # işlendiğinden metrik logunda güncel port durumu kullanılır.
+        datapath.send_msg(parser.OFPPortDescStatsRequest(datapath, 0))
+        datapath.send_msg(parser.OFPPortStatsRequest(datapath, 0,
+                                                     ofproto.OFPP_ANY))
+
+    @staticmethod
+    def _is_data_port(ofproto, port_no):
+        # LOCAL, CONTROLLER vb. ayrılmış OpenFlow portları hariç tutulur
+        return port_no <= ofproto.OFPP_MAX
+
+    @set_ev_cls(ofp_event.EventOFPPortDescStatsReply, MAIN_DISPATCHER)
+    def port_desc_stats_reply_handler(self, ev):
+        datapath = ev.msg.datapath
+        ofproto = datapath.ofproto
+        # Yalnızca aktif (kayıtlı) switchlerin cevapları işlenir
+        if self.datapaths.get(datapath.id) is not datapath:
+            return
+        ports = []
+        for p in ev.msg.body:
+            if not self._is_data_port(ofproto, p.port_no):
+                continue
+            name = p.name
+            if isinstance(name, bytes):
+                name = name.decode("utf-8", "replace")
+            ports.append({
+                "port_no": p.port_no,
+                "name": name.rstrip("\x00"),
+                "link_up": not (p.state & ofproto.OFPPS_LINK_DOWN),
+                "admin_up": not (p.config & ofproto.OFPPC_PORT_DOWN)})
+        self.event_bus.publish(PORT_STATUS_UPDATE,
+                               {"dpid": datapath.id, "ports": ports})
+
+    @set_ev_cls(ofp_event.EventOFPPortStatsReply, MAIN_DISPATCHER)
+    def port_stats_reply_handler(self, ev):
+        timestamp = time.monotonic()
+        datapath = ev.msg.datapath
+        ofproto = datapath.ofproto
+        if self.datapaths.get(datapath.id) is not datapath:
+            return
+        ports = []
+        for s in ev.msg.body:
+            if not self._is_data_port(ofproto, s.port_no):
+                continue
+            ports.append({
+                "port_no": s.port_no,
+                "rx_bytes": s.rx_bytes, "tx_bytes": s.tx_bytes,
+                "rx_packets": s.rx_packets, "tx_packets": s.tx_packets,
+                "rx_errors": s.rx_errors, "tx_errors": s.tx_errors,
+                "rx_dropped": s.rx_dropped, "tx_dropped": s.tx_dropped,
+                "duration_sec": getattr(s, "duration_sec", None),
+                "duration_nsec": getattr(s, "duration_nsec", 0)})
+        self.event_bus.publish(PORT_STATS_UPDATE,
+                               {"dpid": datapath.id, "timestamp": timestamp,
+                                "ports": ports})
 
     # ------------------------------------------------------------------
     # Yardımcı: flow ekleme
