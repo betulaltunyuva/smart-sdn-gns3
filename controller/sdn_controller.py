@@ -74,6 +74,10 @@ class SDNController(app_manager.OSKenApp):
     # Aşama 6.2: port istatistik sorgulama aralığı (saniye)
     STATS_INTERVAL = 5
 
+    # MAC learning ile kurulan flowların cookie'si: topoloji değişince
+    # yalnızca bu flowlar silinir (table-miss ve LLDP flowlarına dokunulmaz)
+    LEARNED_FLOW_COOKIE = 0x5D
+
     def __init__(self, *args, **kwargs):
         super(SDNController, self).__init__(*args, **kwargs)
         # osken-manager varsayılan olarak yalnızca WARNING loglarını gösterir;
@@ -96,6 +100,14 @@ class SDNController(app_manager.OSKenApp):
         # Sabit DPID/port/link listesi yok; tamamen eventlerle doldurulur.
         self.link_directions = set()
         self.links = {}
+        # Döngüsüz flood (broadcast storm / MAC flapping önleme). self.links
+        # üzerinden hesaplanan spanning tree'ye göre:
+        #   isl_ports:  {dpid: {port, ...}} switchler arası (LLDP) portlar
+        #   tree_ports: {dpid: {port, ...}} spanning tree'deki ISL portları
+        # Tree dışındaki ISL portlarından flood yapılmaz, gelen flood/öğrenme
+        # paketleri düşürülür.
+        self.isl_ports = {}
+        self.tree_ports = {}
         # Topoloji graph'ı (Aşama 4.3): self.datapaths ve self.links'ten
         # türetilir, her switch/link değişikliğinde senkronize edilir.
         self.topology = None
@@ -263,6 +275,7 @@ class SDNController(app_manager.OSKenApp):
     # Topoloji graph güncelleme (Aşama 4.3)
     # ------------------------------------------------------------------
     def _update_topology(self):
+        self._update_flood_tree()
         if self.topology is None:
             return
         if self.topology.sync(self.datapaths, self.links):
@@ -277,6 +290,78 @@ class SDNController(app_manager.OSKenApp):
         for i, src in enumerate(dpids):
             for dst in dpids[i + 1:]:
                 self.topology.get_shortest_path(src, dst)
+
+    # ------------------------------------------------------------------
+    # Döngüsüz flood için spanning tree (MAC learning düzeltmesi)
+    # ------------------------------------------------------------------
+    def _update_flood_tree(self):
+        """self.links'ten deterministik bir spanning tree (Kruskal) hesaplar.
+        Redundant linkli topolojide OFPP_FLOOD broadcast'i döngüye sokar ve
+        host MAC'leri switchler arası portlarda (yanlış portta) öğrenilir.
+        Tree değişirse öğrenilmiş MAC tablosu ve learning flowları silinir."""
+        parent = {dpid: dpid for dpid in self.datapaths}
+
+        def find(x):
+            while parent[x] != x:
+                parent[x] = parent[parent[x]]
+                x = parent[x]
+            return x
+
+        isl_ports = {}
+        tree_ports = {}
+        for key in sorted(self.links):
+            (a, pa), (b, pb) = key
+            if a not in parent or b not in parent:
+                continue
+            isl_ports.setdefault(a, set()).add(pa)
+            isl_ports.setdefault(b, set()).add(pb)
+            ra, rb = find(a), find(b)
+            if ra != rb:
+                parent[ra] = rb
+                tree_ports.setdefault(a, set()).add(pa)
+                tree_ports.setdefault(b, set()).add(pb)
+
+        if isl_ports == self.isl_ports and tree_ports == self.tree_ports:
+            return
+        self.isl_ports = isl_ports
+        self.tree_ports = tree_ports
+        self.logger.info("Flood tree güncellendi: tree_ports=%s "
+                         "bloklu_isl_ports=%s",
+                         {"%016x" % d: sorted(p) for d, p in tree_ports.items()},
+                         {"%016x" % d: sorted(p - tree_ports.get(d, set()))
+                          for d, p in isl_ports.items()
+                          if p - tree_ports.get(d, set())})
+        # Eski topolojide öğrenilen portlar artık yanlış olabilir
+        self.mac_to_port.clear()
+        for datapath in list(self.datapaths.values()):
+            self._delete_learned_flows(datapath)
+
+    def _delete_learned_flows(self, datapath):
+        ofproto = datapath.ofproto
+        parser = datapath.ofproto_parser
+        datapath.send_msg(parser.OFPFlowMod(
+            datapath=datapath, cookie=self.LEARNED_FLOW_COOKIE,
+            cookie_mask=0xffffffffffffffff, table_id=ofproto.OFPTT_ALL,
+            command=ofproto.OFPFC_DELETE, out_port=ofproto.OFPP_ANY,
+            out_group=ofproto.OFPG_ANY, match=parser.OFPMatch()))
+
+    def _is_blocked_port(self, dpid, port_no):
+        """Spanning tree dışında kalan switchler arası port mu?"""
+        return (port_no in self.isl_ports.get(dpid, ())
+                and port_no not in self.tree_ports.get(dpid, ()))
+
+    def _flood_actions(self, datapath, in_port):
+        """in_port ve bloklu ISL portları hariç tüm veri portlarına çıkış.
+        Port listesi switch'in kendi PortDesc bilgisinden gelir."""
+        ofproto = datapath.ofproto
+        parser = datapath.ofproto_parser
+        ports = getattr(datapath, "ports", None) or {}
+        if not ports:
+            # Port listesi henüz yoksa eski davranış
+            return [parser.OFPActionOutput(ofproto.OFPP_FLOOD)]
+        return [parser.OFPActionOutput(p) for p in sorted(ports)
+                if self._is_data_port(ofproto, p) and p != in_port
+                and not self._is_blocked_port(datapath.id, p)]
 
     # ------------------------------------------------------------------
     # Port istatistikleri (Aşama 6.2)
@@ -358,7 +443,7 @@ class SDNController(app_manager.OSKenApp):
     # Yardımcı: flow ekleme
     # ------------------------------------------------------------------
     def add_flow(self, datapath, priority, match, actions, buffer_id=None,
-                 idle_timeout=0, hard_timeout=0):
+                 idle_timeout=0, hard_timeout=0, cookie=0):
         ofproto = datapath.ofproto
         parser = datapath.ofproto_parser
 
@@ -366,7 +451,7 @@ class SDNController(app_manager.OSKenApp):
                                              actions)]
         kwargs = dict(datapath=datapath, priority=priority, match=match,
                       instructions=inst, idle_timeout=idle_timeout,
-                      hard_timeout=hard_timeout)
+                      hard_timeout=hard_timeout, cookie=cookie)
         if buffer_id is not None and buffer_id != ofproto.OFP_NO_BUFFER:
             kwargs['buffer_id'] = buffer_id
         datapath.send_msg(parser.OFPFlowMod(**kwargs))
@@ -395,30 +480,47 @@ class SDNController(app_manager.OSKenApp):
         dpid = datapath.id
         self.mac_to_port.setdefault(dpid, {})
 
+        # Spanning tree dışındaki switchler arası porttan gelen paket bir
+        # döngü kopyasıdır: öğrenilmez, iletilmez
+        if self._is_blocked_port(dpid, in_port):
+            return
+        # Multicast/broadcast kaynak MAC geçersizdir; öğrenilmez
+        if int(src.split(':')[0], 16) & 1:
+            return
+
         self.logger.info("PacketIn: DPID=%016x src=%s dst=%s in_port=%s",
                          dpid, src, dst, in_port)
 
-        # Kaynak MAC adresini öğren
+        # Kaynak MAC adresini (bu switch için) giriş portunda öğren
         self.mac_to_port[dpid][src] = in_port
 
-        # Hedef port biliniyorsa oraya, değilse flood
+        # Hedef port biliniyorsa oraya, değilse flood (döngüsüz)
         if dst in self.mac_to_port[dpid]:
             out_port = self.mac_to_port[dpid][dst]
+            if out_port == in_port:
+                # Hedef paketin geldiği tarafta: geri gönderilmez ve
+                # giriş=çıkış portlu (hairpin) flow asla kurulmaz
+                self.logger.info("Hairpin engellendi: DPID=%016x %s -> %s "
+                                 "port=%s", dpid, src, dst, in_port)
+                return
+            actions = [parser.OFPActionOutput(out_port)]
         else:
             out_port = ofproto.OFPP_FLOOD
-
-        actions = [parser.OFPActionOutput(out_port)]
+            actions = self._flood_actions(datapath, in_port)
 
         # Hedef biliniyorsa flow ekle (sonraki paketler controller'a gelmez)
         if out_port != ofproto.OFPP_FLOOD:
             match = parser.OFPMatch(in_port=in_port, eth_dst=dst, eth_src=src)
             self.add_flow(datapath, 1, match, actions, msg.buffer_id,
-                          idle_timeout=60)
+                          idle_timeout=60, cookie=self.LEARNED_FLOW_COOKIE)
             self.logger.info("Flow eklendi: DPID=%016x %s -> %s out_port=%s",
                              dpid, src, dst, out_port)
             # Paket switch'te buffer'landıysa flow-mod onu zaten iletir
             if msg.buffer_id != ofproto.OFP_NO_BUFFER:
                 return
+
+        if not actions:
+            return
 
         # Paketi switch'e geri gönder (PacketOut)
         data = None
