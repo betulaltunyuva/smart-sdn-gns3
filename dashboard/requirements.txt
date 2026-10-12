@@ -1,0 +1,6 @@
+# Smart SDN dashboard (Aşama 7) - yalnızca dashboard process'i için.
+# Controller bu paketlere ihtiyaç duymaz.
+streamlit>=1.37
+plotly>=5.18
+pandas>=1.5
+networkx>=2.8

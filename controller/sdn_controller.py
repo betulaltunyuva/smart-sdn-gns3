@@ -12,6 +12,8 @@ Smart SDN (GNS3) - OS-Ken OpenFlow 1.3 Learning Switch Controller
                (PortDesc + PortStats) -> MonitoringAgent metrikleri
   - Aşama 6.5: RecoveryAgent seçilen alternatif yolu host-MAC'e özgü
                recovery flowları ile uygular (RecoveryFlowOps üzerinden)
+  - Aşama 7  : Dashboard için salt okunur durum çıktısı
+               (utils/runtime_state.py -> runtime/state.json)
 
 GNS3 içindeki Open vSwitch node'ları ile çalışmak üzere tasarlanmıştır.
 Yalnızca OpenFlow 1.3 destekler.
@@ -66,6 +68,13 @@ from utils.event_bus import (EventBus, TOPO_LINK_ADDED, TOPO_LINK_REMOVED,
 from agents import (MonitoringAgent, FailureDetectionAgent, RoutingAgent,
                     RecoveryAgent)
 from agents.recovery_agent import RECOVERY_FLOW_COOKIE
+
+# Aşama 7: dashboard için salt okunur durum çıktısı (runtime/state.json).
+# Yüklenemezse controller ve agentlar etkilenmeden çalışmaya devam eder.
+try:
+    from utils.runtime_state import RuntimeStateWriter
+except ImportError:
+    RuntimeStateWriter = None
 
 
 class RecoveryFlowOps(object):
@@ -199,6 +208,19 @@ class SDNController(app_manager.OSKenApp):
             self.event_bus, self.logger, topology=self.topology,
             flow_ops=RecoveryFlowOps(self),
             learned_cookie=self.LEARNED_FLOW_COOKIE)
+        # Aşama 7: dashboard state yazıcısı. Agentlardan SONRA oluşturulur
+        # (EventBus'ta en son abone); yalnızca gözlemler, hiçbir agent
+        # davranışını değiştirmez. Hata olursa yalnızca dashboard verisi
+        # olmaz.
+        self.state_writer = None
+        if RuntimeStateWriter is not None:
+            try:
+                self.state_writer = RuntimeStateWriter(self)
+                self.state_thread = hub.spawn(self.state_writer.run,
+                                              hub.sleep)
+            except Exception:
+                self.logger.exception("Runtime state yazıcısı başlatılamadı "
+                                      "(dashboard verisi olmayacak)")
         # Aşama 6.2: aktif switchlerden periyodik port istatistiği iste
         self.stats_thread = hub.spawn(self._stats_loop)
         self.logger.info("SDN Controller başlatıldı (OpenFlow 1.3)")

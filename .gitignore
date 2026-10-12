@@ -31,3 +31,8 @@ datasets/*.csv
 # OS files
 .DS_Store
 Thumbs.db
+
+# Runtime durum dosyaları (Aşama 7 dashboard)
+runtime/
+*.tmp
+.streamlit/secrets.toml
