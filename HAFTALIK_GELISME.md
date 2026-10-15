@@ -4,6 +4,8 @@
 
 Bu hafta GNS3 üzerinde geliştirdiğim SDN sistemini **multi-agent yapıya** dönüştürdüm ve self-healing mekanizmasını geliştirdim.
 
+“Hocam bu hafta GNS3 üzerindeki SDN sistemini multi-agent yapıya dönüştürdüm ve link arızalarında otomatik alternatif yol hesaplayıp recovery uygulayan self-healing yapıyı çalıştırdım. Kısaca topolojiyi ve canlı dashboard’u göstereyim.”
+
 Sistemde dört agent bulunuyor:
 
 - **Monitoring Agent:** Ağdaki linkleri ve port durumlarını izliyor.
