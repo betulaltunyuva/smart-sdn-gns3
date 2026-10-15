@@ -128,20 +128,64 @@ Akış:
 
 ---
 
-## Kullandığım Teknolojiler
+## Kullanılan Teknolojiler
 
-- **GNS3:** Sanal ağ topolojisini oluşturmak ve link arızalarını test etmek için
-- **Open vSwitch (OVS):** Yazılımsal switch olarak
-- **OS-Ken Controller:** SDN controller olarak
-- **OpenFlow 1.3:** Controller ile Open vSwitch arasındaki haberleşme için
-- **Python:** Controller, agent ve yardımcı modüllerin geliştirilmesi için
-- **NetworkX:** Ağ topolojisini graph olarak tutmak ve alternatif yol hesaplamak için
-- **LLDP:** Switchler arasındaki linkleri dinamik olarak keşfetmek için
-- **Docker:** GNS3 içerisindeki Open vSwitch düğümlerini container olarak çalıştırmak için
-- **Streamlit:** Canlı izleme dashboard'unu oluşturmak için
-- **EventBus:** Agent'ların olay tabanlı haberleşmesi için
-- **Bash / Shell Script:** Sistem başlangıcını otomatikleştirmek için
-- **Git / GitHub:** Sürüm kontrolü ve proje takibi için
+### 1. Ağ Topolojisi ve Simülasyon
+- GNS3
+- Open vSwitch (OVS)
+- Docker
+- VPCS
+- Alpine Linux
+
+### 2. SDN Controller
+- OS-Ken
+- Python
+- OpenFlow 1.3
+
+### 3. Dinamik Switch ve Link Keşfi
+- DPID
+- LLDP
+- OS-Ken Topology API
+
+### 4. Topoloji Yönetimi ve Routing
+- NetworkX
+- Python
+
+### 5. Multi-Agent Mimari
+- Python
+- EventBus
+- OpenFlow Port Statistics
+- LLDP
+- NetworkX
+- OpenFlow 1.3
+
+### 6. Agentlar Arası Haberleşme
+- EventBus
+
+### 7. Self-Healing ve Recovery
+- OpenFlow 1.3
+- OS-Ken
+- NetworkX
+- Recovery Agent
+
+### 8. Monitoring ve Ağ Metrikleri
+- OpenFlow PortStats
+- Python
+
+### 9. Dashboard
+- Streamlit
+- runtime/state.json
+
+### 10. Başlangıç Otomasyonu
+- Bash / Shell Script
+- Docker CLI
+
+### 11. Testler
+- Python Offline Tests
+
+### 12. Sürüm Kontrolü
+- Git
+- GitHub
 
 ---
 
