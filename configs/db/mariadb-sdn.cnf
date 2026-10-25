@@ -1,0 +1,7 @@
+[mysqld]
+datadir=/etc/network/db-data
+bind-address=10.10.50.20
+port=3306
+socket=/run/mysqld/mysqld.sock
+pid-file=/run/mysqld/mysqld.pid
+skip-name-resolve

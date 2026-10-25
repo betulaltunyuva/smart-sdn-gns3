@@ -36,3 +36,15 @@ Thumbs.db
 runtime/
 *.tmp
 .streamlit/secrets.toml
+
+# GNS3 runtime / container data
+project-files/
+snapshots/
+*.gns3project
+
+# Persistent package/data directories
+*.apk
+db-data/
+db-pkgs/
+web-pkgs/
+README.backup.md

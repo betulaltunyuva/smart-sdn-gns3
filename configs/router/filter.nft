@@ -1,0 +1,23 @@
+table ip sdn_filter {
+    chain forward {
+        type filter hook forward priority 0; policy accept;
+
+        # Daha once baslatilmis baglantilarin donus trafigine izin ver
+        ct state established,related counter accept
+
+        # GUEST sadece DNS sunucusuna DNS sorgusu yapabilir
+        ip saddr 10.10.30.0/24 ip daddr 10.10.50.53 udp dport 53 counter accept
+        ip saddr 10.10.30.0/24 ip daddr 10.10.50.53 tcp dport 53 counter accept
+
+        # GUEST diger ic VLAN'lara erisemez
+        ip saddr 10.10.30.0/24 ip daddr { 10.10.10.0/24, 10.10.20.0/24, 10.10.40.0/24, 10.10.50.0/24 } counter drop
+
+        # STAFF, ADMIN/GUEST/STUDENT VLAN'larina erisemez
+        # SERVER VLAN ve internet erisimi aciktir
+        ip saddr 10.10.20.0/24 ip daddr { 10.10.10.0/24, 10.10.30.0/24, 10.10.40.0/24 } counter drop
+
+        # STUDENT, ADMIN/STAFF/GUEST VLAN'larina erisemez
+        # SERVER VLAN ve internet erisimi aciktir
+        ip saddr 10.10.40.0/24 ip daddr { 10.10.10.0/24, 10.10.20.0/24, 10.10.30.0/24 } counter drop
+    }
+}
