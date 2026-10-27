@@ -2,9 +2,74 @@
 
 ## Proje Hakkında
 
-Bu proje, **GNS3 üzerinde gerçekçi bir kurumsal ağ topolojisi kurarak Software-Defined Networking (SDN), Multi-Agent sistemler, ağ izleme, otomatik hata tespiti, alternatif yol hesaplama ve self-healing mekanizmalarını bir araya getirmeyi** amaçlamaktadır.
+Bu proje, **GNS3 üzerinde gerçekçi bir kurumsal/kampüs ağı oluşturarak Software-Defined Networking (SDN), Multi-Agent sistemler, ağ izleme, otomatik hata tespiti, dinamik routing ve self-healing mekanizmalarını tek bir sistemde birleştirmeyi** amaçlamaktadır.
 
-Projenin temel teknolojileri:
+Proje ilk olarak daha küçük bir SDN laboratuvar topolojisi üzerinde geliştirilmiştir. Bu ilk yapı üzerinde:
+
+- dinamik switch keşfi,
+- dinamik link keşfi,
+- NetworkX tabanlı graph oluşturma,
+- shortest-path hesaplama,
+- Monitoring Agent,
+- Failure Detection Agent,
+- Routing Agent,
+- Recovery Agent,
+- startup otomasyonu,
+- runtime state,
+- Streamlit dashboard
+
+gibi temel bileşenler geliştirilmiştir.
+
+Daha sonra sistem, daha gerçekçi bir kurumsal ağ ortamında test edilmek üzere:
+
+`Smart_SDN_MultiAgent_v2_Work`
+
+topolojisine taşınmış ve ağ; VLAN, access/distribution katmanları, sunucular, NAT, firewall ve servisler ile genişletilmiştir.
+
+---
+
+# Güncel Durum
+
+> **27 Ekim 2026 itibarıyla Aşama 0–6 tamamlanmıştır.**
+>
+> **Sıradaki aşama: Aşama 7 — Multi-Agent Entegrasyonu**
+
+Şu ana kadar başarıyla tamamlanan ana çalışmalar:
+
+- Çalışan eski SDN sürümünün korunması
+- Yeni kurumsal GNS3 topolojisinin oluşturulması
+- Access ve Distribution katmanlarının eklenmesi
+- Kullanıcı gruplarının ayrılması
+- VLAN mimarisinin oluşturulması
+- Router-on-a-Stick yapılandırması
+- VLAN'lar arası routing
+- NAT ve internet erişimi
+- Stateful firewall
+- Rol bazlı erişim politikaları
+- WEB-SERVER
+- DNS-SERVER
+- DB-SERVER
+- Yerel DNS çözümleme
+- WEB → DB gerçek MariaDB bağlantısı
+- Servis ve ağ yapılandırmalarının kalıcı hale getirilmesi
+- Open vSwitch cihazlarının SDN omurgası olarak konumlandırılması
+- 4 OVS'in OS-Ken controller'a bağlanması
+- OpenFlow 1.3 doğrulaması
+- Dinamik switch keşfi
+- LLDP tabanlı dinamik link keşfi
+- NetworkX graph oluşturma
+- Dinamik shortest-path hesaplama
+- Kontrollü link failure testi
+- Alternatif yol oluşturma
+- Recovery flow'larının yüklenmesi
+- Link arızası sırasında gerçek trafiğin devam etmesi
+- Link geri geldiğinde topolojinin otomatik güncellenmesi
+
+---
+
+# 1. Kullanılan Teknolojiler
+
+Projede kullanılan başlıca teknolojiler:
 
 - **GNS3**
 - **Open vSwitch (OVS)**
@@ -13,53 +78,47 @@ Projenin temel teknolojileri:
 - **Python**
 - **NetworkX**
 - **Multi-Agent mimari**
-- **nftables**
-- **VLAN**
+- **Event-driven haberleşme**
 - **Docker tabanlı GNS3 düğümleri**
+- **VLAN**
+- **nftables**
 - **dnsmasq**
 - **lighttpd**
 - **MariaDB**
-- **Streamlit Dashboard**
-
-Proje ilk olarak daha küçük bir SDN laboratuvar topolojisi üzerinde geliştirilmiş; dinamik topoloji keşfi, routing, Monitoring Agent, Failure Detection Agent, Routing Agent ve Recovery Agent bileşenleri oluşturulmuştur.
-
-Daha sonra proje, daha gerçekçi bir kurumsal ağ senaryosuna taşınmak üzere **`Smart_SDN_MultiAgent_v2_Work`** topolojisi ile genişletilmiştir.
+- **Streamlit**
+- **Git / GitHub**
 
 ---
 
-# Güncel Durum
+# 2. Güncel Ağ Mimarisi
 
-> **25 Ekim 2026 itibarıyla güncel `Smart_SDN_MultiAgent_v2_Work` geliştirme planında Aşama 0–4 tamamlanmıştır.**
->
-> **Sıradaki aşama: Aşama 5 — SDN Switch Stratejisinin Netleştirilmesi**
+Yeni ağ, küçük SDN laboratuvar ortamından daha gerçekçi bir **kurumsal/kampüs ağı** modeline dönüştürülmüştür.
 
-Şu ana kadar tamamlanan ana çalışmalar:
+Ağ temel olarak şu katmanlardan oluşmaktadır:
 
-- Çalışan eski SDN sürümünün korunması
-- Yeni ve daha büyük GNS3 topolojisinin hazırlanması
-- Kullanıcı gruplarının ayrılması
-- Access ve Distribution katmanlarının oluşturulması
-- VLAN mimarisinin kurulması
-- Router-on-a-Stick yapılandırması
-- VLAN'lar arası routing
-- NAT ve internet erişimi
-- Stateful firewall
-- Rol bazlı ağ erişim politikaları
-- WEB-SERVER
-- DNS-SERVER
-- DB-SERVER
-- Yerel DNS kayıtları
-- WEB → DB gerçek servis bağlantısı
-- Ağ ve servis yapılandırmalarının kalıcı hale getirilmesi
-- Stop/Start sonrası kalıcılık testleri
+```text
+                    INTERNET
+                       |
+                    ROUTER-1
+                       |
+        --------------------------------
+        |                              |
+   Kurumsal Ağ                    SDN Omurgası
+        |                              |
+ Access / Distribution          Open vSwitch
+        |                              |
+ Kullanıcı VLAN'ları             OS-Ken Controller
+        |
+ SERVER VLAN
+        |
+ WEB / DNS / DB
+```
 
 ---
 
-# 1. Güncel Ağ Mimarisi
+# 3. VLAN ve Kullanıcı Grupları
 
-Yeni topoloji, küçük laboratuvar ağından daha gerçekçi bir **kurumsal ağ modeline** dönüştürülmüştür.
-
-Kullanıcılar farklı ağ segmentlerine ayrılmıştır.
+Kullanıcı grupları birbirinden mantıksal olarak ayrılmıştır.
 
 | VLAN | Rol | Ağ |
 |---|---|---|
@@ -69,7 +128,7 @@ Kullanıcılar farklı ağ segmentlerine ayrılmıştır.
 | VLAN 40 | STUDENT | `10.10.40.0/24` |
 | VLAN 50 | SERVER | `10.10.50.0/24` |
 
-Her VLAN için ROUTER-1 üzerinde bir gateway bulunmaktadır:
+ROUTER-1 üzerindeki gateway adresleri:
 
 ```text
 VLAN 10 → 10.10.10.1
@@ -81,9 +140,7 @@ VLAN 50 → 10.10.50.1
 
 ---
 
-# 2. Kullanıcı Grupları
-
-Topolojide farklı kullanıcı rollerini temsil eden uç cihazlar bulunmaktadır.
+# 4. Kullanıcı Uç Cihazları
 
 ## ADMIN
 
@@ -94,9 +151,7 @@ ADMIN-PC2
 
 ADMIN cihazları VLAN 10 içerisindedir.
 
-ADMIN ağı, yönetim amaçlı en geniş erişim yetkisine sahip kullanıcı grubudur.
-
----
+Yönetim ağı olarak diğer kullanıcı gruplarına göre daha geniş erişim yetkisine sahiptir.
 
 ## STAFF
 
@@ -107,9 +162,7 @@ STAFF-PC2
 
 STAFF cihazları VLAN 20 içerisindedir.
 
-Personel ağı, diğer kullanıcı VLAN'larından izole edilmiştir ancak sunucu ağına ve internete erişebilir.
-
----
+Personel ağı sunucu hizmetlerine ve internete erişebilir ancak diğer kullanıcı VLAN'larından izole edilmiştir.
 
 ## GUEST
 
@@ -120,13 +173,11 @@ GUEST-PC2
 
 GUEST cihazları VLAN 30 içerisindedir.
 
-Misafir kullanıcıların:
+Misafir kullanıcılar:
 
-- internete çıkmasına izin verilir,
-- DNS hizmetini kullanmasına izin verilir,
-- kurumun diğer kullanıcı ağlarına erişmesine izin verilmez.
-
----
+- internete erişebilir,
+- DNS hizmetini kullanabilir,
+- diğer kurumsal kullanıcı ağlarına doğrudan erişemez.
 
 ## STUDENT
 
@@ -139,17 +190,17 @@ STUDENT cihazları VLAN 40 içerisindedir.
 
 Öğrenci ağı:
 
-- sunucu hizmetlerini kullanabilir,
-- internete çıkabilir,
+- sunucu hizmetlerine erişebilir,
+- internete erişebilir,
 - ADMIN, STAFF ve GUEST ağlarından izole edilmiştir.
 
 ---
 
-# 3. Access ve Distribution Katmanı
+# 5. Access ve Distribution Katmanı
 
-Yeni topolojide kullanıcı cihazları doğrudan SDN omurgasına bağlanmak yerine access switch'ler üzerinden bağlanmaktadır.
+Kullanıcı cihazlarının doğrudan SDN omurgasına bağlanması yerine gerçek kurumsal ağlara daha yakın bir yapı oluşturulmuştur.
 
-Kullanılan access switch'ler:
+Access switch'ler:
 
 ```text
 ACCESS-SW1
@@ -158,24 +209,22 @@ ACCESS-SW3
 ACCESS-SW4
 ```
 
-Distribution katmanında:
+Distribution switch'ler:
 
 ```text
 DIST-SW1
 DIST-SW2
 ```
 
-bulunmaktadır.
+Access ve Distribution katmanlarında normal Ethernet switch'ler kullanılmaktadır.
 
-Bu yapı ile topoloji daha gerçekçi bir kampüs/kurum ağına dönüştürülmüştür.
+Open vSwitch cihazları ise yalnızca SDN kontrolünün gerekli olduğu omurga bölümünde tutulmaktadır.
 
 ---
 
-# 4. VLAN ve Ağ Segmentasyonu
+# 6. Router-on-a-Stick
 
-VLAN'lar ile kullanıcı grupları mantıksal olarak birbirinden ayrılmıştır.
-
-ROUTER-1 üzerinde VLAN alt arayüzleri kullanılarak **Router-on-a-Stick** yapısı oluşturulmuştur.
+ROUTER-1 üzerinde VLAN alt arayüzleri kullanılarak Router-on-a-Stick mimarisi uygulanmıştır.
 
 Örnek alt arayüzler:
 
@@ -187,33 +236,34 @@ eth0.40
 eth0.50
 ```
 
-Bu arayüzler sayesinde farklı VLAN'lar arasında routing yapılabilmektedir.
-
-VLAN yapılandırmalarının cihaz yeniden başlatıldığında kaybolmaması için gerekli ağ ayarları kalıcı hale getirilmiştir.
+Bu yapı sayesinde farklı VLAN'lar arasında kontrollü Layer-3 routing yapılabilmektedir.
 
 ---
 
-# 5. ROUTER-1
+# 7. ROUTER-1
 
 ROUTER-1 ağın merkezi Layer-3 bileşenidir.
 
-Görevleri:
+Başlıca görevleri:
 
 - VLAN gateway'lerini sağlamak
 - VLAN'lar arasında routing yapmak
 - internet erişimini yönetmek
 - NAT uygulamak
 - firewall politikalarını uygulamak
+- SERVER VLAN'a erişimi kontrol etmek
 
-Ayrıca dış ağ bağlantısı için ayrı bir arayüz kullanılmaktadır.
+Projede ayrı bir firewall appliance kullanılmamaktadır.
+
+Firewall fonksiyonu ROUTER-1 üzerinde **nftables** ile uygulanmıştır.
 
 ---
 
-# 6. NAT ve İnternet Erişimi
+# 8. NAT ve İnternet Erişimi
 
-İç ağların internete çıkabilmesi için ROUTER-1 üzerinde **nftables tabanlı NAT** yapılandırılmıştır.
+İç ağların dış ağa erişebilmesi için ROUTER-1 üzerinde nftables tabanlı NAT yapılandırılmıştır.
 
-NAT kapsamına şu ağlar dahildir:
+NAT kapsamındaki ağlar:
 
 ```text
 10.10.10.0/24
@@ -223,105 +273,93 @@ NAT kapsamına şu ağlar dahildir:
 10.10.50.0/24
 ```
 
-İç ağlardan gelen trafik dış arayüz üzerinden masquerade edilmektedir.
+İç ağ trafiği dış arayüz üzerinden masquerade edilmektedir.
 
-NAT yapılandırması:
+İlgili dosyalar:
 
 ```text
 configs/router/nat.nft
 configs/router/nat.sh
 ```
 
-dosyalarıyla dokümante edilmiştir.
-
-NAT yapılandırmasının Stop → Start sonrasında tekrar aktif olduğu doğrulanmıştır.
+NAT yapılandırmasının GNS3 Stop → Start işlemi sonrasında yeniden çalıştığı doğrulanmıştır.
 
 ---
 
-# 7. Stateful Firewall
+# 9. Stateful Firewall
 
-ROUTER-1 üzerinde **nftables tabanlı stateful firewall** oluşturulmuştur.
+ROUTER-1 üzerinde nftables tabanlı stateful firewall bulunmaktadır.
 
-Stateful yapı sayesinde mevcut bağlantılara ait dönüş paketleri:
+Mevcut bağlantılara ait dönüş paketleri:
 
 ```text
 ct state established,related accept
 ```
 
-mantığı ile kabul edilmektedir.
+mantığıyla kabul edilmektedir.
 
-Böylece yalnızca tek yönlü IP filtreleme yerine bağlantı durumunu takip eden daha gerçekçi bir firewall yapısı oluşturulmuştur.
+Böylece yalnızca kaynak/hedef IP bazlı filtreleme yerine bağlantının durumunu takip eden stateful güvenlik politikaları uygulanmaktadır.
 
-Firewall yapılandırmaları:
+İlgili dosyalar:
 
 ```text
 configs/router/filter.nft
 configs/router/filter.sh
 ```
 
-altında tutulmaktadır.
+---
+
+# 10. Rol Bazlı Ağ Politikaları
+
+Ağ grupları arasında erişim kontrolü uygulanmaktadır.
+
+## ADMIN
+
+Yönetim ağıdır ve gerekli iç ağlara erişim yetkisine sahiptir.
+
+## STAFF
+
+```text
+SERVER   → izinli
+Internet → izinli
+```
+
+Diğer kullanıcı VLAN'larına doğrudan erişim sınırlandırılmıştır.
+
+## STUDENT
+
+```text
+SERVER   → izinli
+Internet → izinli
+```
+
+ADMIN, STAFF ve GUEST ağlarından izole edilmiştir.
+
+## GUEST
+
+```text
+Internet → izinli
+DNS      → izinli
+```
+
+Diğer kurumsal kullanıcı ağlarına erişim engellenmiştir.
+
+Politikalar gerçek VPCS cihazlarından yapılan bağlantı testleriyle doğrulanmıştır.
 
 ---
 
-# 8. Rol Bazlı Erişim Politikaları
+# 11. SERVER VLAN
 
-Firewall ile kullanıcı grupları arasında rol bazlı erişim kontrolü uygulanmaktadır.
-
-Genel politika:
-
-### ADMIN
-
-ADMIN ağı yönetim ağıdır ve diğer gerekli ağlara erişebilir.
-
-### STAFF
-
-STAFF:
-
-```text
-SERVER → erişebilir
-Internet → erişebilir
-```
-
-ancak diğer kullanıcı VLAN'larına doğrudan erişemez.
-
-### STUDENT
-
-STUDENT:
-
-```text
-SERVER → erişebilir
-Internet → erişebilir
-```
-
-ancak ADMIN, STAFF ve GUEST VLAN'larından izole edilmiştir.
-
-### GUEST
-
-GUEST:
-
-```text
-Internet → erişebilir
-DNS → erişebilir
-```
-
-ancak kurumun diğer iç VLAN'larına erişemez.
-
-Firewall testleri gerçek VPCS cihazları üzerinden ping testleriyle doğrulanmıştır.
-
----
-
-# 9. SERVER VLAN
-
-Sunucular için ayrı bir:
+Sunucular için ayrı bir ağ segmenti oluşturulmuştur.
 
 ```text
 VLAN 50
 10.10.50.0/24
 ```
 
-sunucu ağı oluşturulmuştur.
+Bu bölüm korumalı sunucu bölgesi olarak kullanılmaktadır.
 
-Bu ağda üç temel servis bulunmaktadır:
+Sunucular:
 
 ```text
 WEB-SERVER
@@ -331,23 +369,23 @@ DB-SERVER
 
 ---
 
-# 10. WEB-SERVER
+# 12. WEB-SERVER
 
-WEB-SERVER adresi:
+WEB-SERVER IP adresi:
 
 ```text
 10.10.50.10
 ```
 
-Sunucuda:
+Web servisi:
 
 ```text
 lighttpd
 ```
 
-kullanılmaktadır.
+ile çalışmaktadır.
 
-Test amacıyla hazırlanan web sayfası:
+Test web sayfası:
 
 ```text
 Smart SDN Network
@@ -357,17 +395,13 @@ IP: 10.10.50.10
 
 şeklinde yanıt vermektedir.
 
-WEB-SERVER'ın hem localhost üzerinden hem de ağ üzerinden erişilebilir olduğu doğrulanmıştır.
-
-DNS kaydı:
+Yerel DNS kaydı:
 
 ```text
 web.sdn.test → 10.10.50.10
 ```
 
-şeklindedir.
-
-WEB-SERVER için kullanılan kalıcı yapılandırmalar:
+Kalıcı WEB yapılandırmaları:
 
 ```text
 configs/web/
@@ -377,66 +411,54 @@ altında tutulmaktadır.
 
 ---
 
-# 11. DNS-SERVER
+# 13. DNS-SERVER
 
-DNS-SERVER adresi:
+DNS-SERVER IP adresi:
 
 ```text
 10.10.50.53
 ```
 
-DNS hizmeti için:
+DNS hizmeti:
 
 ```text
 dnsmasq
 ```
 
-kullanılmaktadır.
+ile sağlanmaktadır.
 
-Yerel DNS kayıtları:
+Yerel kayıtlar:
 
 ```text
 web.sdn.test → 10.10.50.10
 db.sdn.test  → 10.10.50.20
 ```
 
-olarak yapılandırılmıştır.
+DNS-SERVER'ın hem yerel isimleri hem de dış internet alan adlarını çözebildiği doğrulanmıştır.
 
-Aynı DNS sunucusunun internet alan adlarını da çözebildiği doğrulanmıştır.
-
-Örneğin:
-
-```text
-google.com
-```
-
-gibi dış alan adları çözümlenebilmektedir.
-
-DNS yapılandırmaları:
+İlgili yapılandırmalar:
 
 ```text
 configs/dns/
 ```
 
-altında saklanmaktadır.
+altındadır.
 
 ---
 
-# 12. DB-SERVER
+# 14. DB-SERVER
 
-DB-SERVER adresi:
+DB-SERVER IP adresi:
 
 ```text
 10.10.50.20
 ```
 
-Veritabanı yönetim sistemi:
+Veritabanı sistemi:
 
 ```text
 MariaDB 11.8.9
 ```
-
-olarak kurulmuştur.
 
 Projeye ait veritabanı:
 
@@ -444,47 +466,47 @@ Projeye ait veritabanı:
 smart_sdn
 ```
 
-olarak oluşturulmuştur.
-
 Test tablosu:
 
 ```text
 network_status
 ```
 
-Tabloda örnek olarak:
+Örnek kayıt:
 
 ```text
 DB-SERVER | ACTIVE
 ```
 
-kaydı bulunmaktadır.
-
 ---
 
-# 13. WEB-SERVER → DB-SERVER Bağlantısı
+# 15. WEB → DB Bağlantısı
 
 WEB-SERVER'ın DB-SERVER'a gerçek MariaDB bağlantısı kurabildiği doğrulanmıştır.
 
-Bağlantı:
+Bağlantı zinciri:
 
 ```text
 WEB-SERVER
-    ↓
+    |
+    v
 db.sdn.test
-    ↓
+    |
+    v
 DNS-SERVER
-    ↓
+    |
+    v
 10.10.50.20
-    ↓
-TCP / 3306
-    ↓
+    |
+    v
+TCP/3306
+    |
+    v
 MariaDB
-    ↓
+    |
+    v
 smart_sdn
 ```
-
-şeklinde çalışmaktadır.
 
 WEB-SERVER üzerinden:
 
@@ -500,102 +522,98 @@ DB-SERVER | ACTIVE
 
 sonucu alınmıştır.
 
-Bu test sayesinde:
+Bu test tek seferde:
 
-- DNS çözümleme
-- WEB → DB iletişimi
-- TCP/3306 erişimi
-- MariaDB kullanıcı yetkisi
-- veritabanı
-- tablo
-- veri
+- DNS çözümleme,
+- WEB → DB iletişimi,
+- TCP/3306 erişimi,
+- MariaDB kullanıcı yetkisi,
+- veritabanı erişimi,
+- tablo erişimi,
+- veri erişimi
 
-tek bir uçtan uca test ile doğrulanmıştır.
+bileşenlerini doğrulamaktadır.
 
-> Veritabanı parolaları ve diğer hassas bilgiler GitHub deposunda tutulmamaktadır.
+> Veritabanı parolaları ve diğer hassas bilgiler GitHub repository'sinde tutulmamaktadır.
 
 ---
 
-# 14. Kalıcılık
+# 16. Kalıcılık
 
-GNS3 Docker düğümlerinde bazı paket ve runtime değişikliklerinin yeniden başlatma sonrasında kaybolabilmesi nedeniyle servisler için ayrıca kalıcılık mekanizmaları hazırlanmıştır.
+GNS3 Docker düğümlerinde runtime değişikliklerinin yeniden başlatma sonrasında kaybolabilmesi nedeniyle kritik servisler için kalıcılık mekanizmaları hazırlanmıştır.
 
-Kalıcı hale getirilen başlıca bileşenler:
+Kalıcı hale getirilen bileşenler arasında:
 
 - Router IP yapılandırmaları
 - VLAN gateway'leri
 - NAT
-- Firewall
-- DNS
-- WEB-SERVER
-- DB-SERVER IP adresi
+- firewall
+- DNS yapılandırması
+- WEB-SERVER yapılandırması
+- DB-SERVER IP yapılandırması
 - MariaDB paketleri
 - MariaDB veri dizini
-- MariaDB başlangıç scripti
-- WEB başlangıç scripti
-- DNS başlangıç scripti
+- MariaDB startup scripti
+- WEB startup scripti
+- DNS startup scripti
 
-DB-SERVER için veritabanı dosyaları kalıcı bir veri dizininde tutulmaktadır.
+bulunmaktadır.
 
-Stop → Start sonrasında:
+DB-SERVER Stop → Start sonrasında:
 
 ```text
 10.10.50.20
-MariaDB servisi
-smart_sdn veritabanı
-network_status tablosu
-DB-SERVER | ACTIVE kaydı
+MariaDB
+smart_sdn
+network_status
+DB-SERVER | ACTIVE
 ```
 
-korunmuştur.
-
-Bu nedenle DB-SERVER kalıcılık testi başarıyla tamamlanmıştır.
+bilgilerinin korunduğu doğrulanmıştır.
 
 ---
 
-# 15. Önceki / Baseline SDN Çekirdeği
+# 17. SDN Omurgası
 
-Yeni kurumsal topolojiden önce proje daha küçük bir SDN laboratuvar ağı üzerinde geliştirilmiştir.
+Aşama 5 kapsamında SDN switch stratejisi kesinleştirilmiştir.
 
-Baseline topoloji:
+SDN omurgasında dört Open vSwitch kullanılmaktadır:
 
 ```text
-PC1
- |
-OVS1 ----- OVS2
- |           |
-OVS3 ----- OVS4
-             |
-            PC2
+        OVS-1
+       /     \
+    OVS-3   OVS-2
+       \     /
+        OVS-4
 ```
 
-Bu topoloji üzerinde geliştirilen özellikler yeni topolojinin SDN katmanında tekrar kullanılacaktır.
+Canlı topolojide fiziksel bağlantı/port eşleşmeleri çalışma anında keşfedildiği için routing kodunda sabit switch yolu kullanılmamaktadır.
+
+Access, Distribution ve Server taraflarında normal Ethernet switch'ler bulunurken OVS cihazları SDN kontrollü omurga olarak kullanılmaktadır.
+
+Bu sayede SDN kontrolü yalnızca gerekli noktalarda tutulmaktadır.
 
 ---
 
-# 16. OS-Ken ve OpenFlow
+# 18. OpenFlow ve OS-Ken Controller
 
-Controller:
+Controller dosyası:
 
 ```text
 controller/sdn_controller.py
 ```
 
-dosyasında bulunmaktadır.
-
-Kullanılan protokol:
+Kullanılan OpenFlow sürümü:
 
 ```text
 OpenFlow 1.3
 ```
 
-Controller bağlantısı:
+Controller endpoint'i:
 
 ```text
 tcp:192.168.122.1:6653
 ```
-
-şeklinde kullanılmaktadır.
 
 OVS tarafında:
 
@@ -607,29 +625,82 @@ fail-mode=secure
 
 yapısı kullanılmaktadır.
 
+Aşama 5 doğrulamasında dört OVS'in de controller'a başarıyla bağlandığı görülmüştür.
+
 ---
 
-# 17. Dinamik Topoloji Keşfi
+# 19. OVS Management Ağı
 
-Controller'ın switch ve bağlantıları sabit olarak tanımlaması yerine çalışma anında keşfetmesi amaçlanmıştır.
+`start_sdn.sh` scripti çalışan GNS3 Open vSwitch container'larını otomatik olarak keşfetmektedir.
 
-### Switch keşfi
+Management interface sabit bir port adına bağlı değildir.
 
-Switch'ler DPID üzerinden otomatik olarak keşfedilmektedir.
+Script:
 
-### Link keşfi
+1. çalışan OVS container'ını bulur,
+2. kullanılabilir management portunu belirler,
+3. management IP'sini alır,
+4. controller adresini ayarlar,
+5. OpenFlow 1.3 protokolünü ayarlar,
+6. `fail-mode=secure` durumunu doğrular.
 
-OS-Ken'in:
+Management IP adresleri çalışma ortamına göre değişebildiği için README içerisinde sabit OVS management IP'leri tutulmamaktadır.
+
+---
+
+# 20. Dinamik Switch Keşfi
+
+Controller switch'leri önceden sabit olarak tanımlamaz.
+
+OpenFlow bağlantısı kuran switch'ler DPID üzerinden çalışma anında keşfedilir.
+
+Aşama 6 testinde:
+
+```text
+Aktif switch sayısı = 4
+```
+
+olarak doğrulanmıştır.
+
+Her OVS'in benzersiz bir DPID ile controller'a bağlandığı görülmüştür.
+
+---
+
+# 21. Dinamik Link Keşfi
+
+OS-Ken:
 
 ```text
 --observe-links
 ```
 
-özelliği kullanılarak LLDP tabanlı link keşfi yapılmaktadır.
+özelliğiyle başlatılmaktadır.
 
-### Graph
+Bu sayede LLDP kullanılarak OVS'ler arasındaki bağlantılar otomatik keşfedilmektedir.
 
-Keşfedilen topoloji:
+Aşama 6 başlangıç durumunda:
+
+```text
+Aktif link sayısı = 4
+```
+
+olarak doğrulanmıştır.
+
+Link bilgileri sabit bir `path1`, `path2` veya sabit topoloji listesine bağlı değildir.
+
+---
+
+# 22. NetworkX Topology Graph
+
+Dinamik olarak keşfedilen switch ve link bilgileri:
+
+```text
+topology/topology_manager.py
+```
+
+tarafından yönetilmektedir.
+
+Topoloji:
 
 ```text
 NetworkX
@@ -637,44 +708,223 @@ NetworkX
 
 graph yapısında tutulmaktadır.
 
-Bu işlemler:
+Aşama 6 testinde başlangıç graph'ı:
 
 ```text
-topology/topology_manager.py
+node_count = 4
+edge_count = 4
 ```
 
-üzerinden yönetilmektedir.
+olarak doğrulanmıştır.
 
 ---
 
-# 18. Dinamik Routing
+# 23. Dinamik Shortest Path
 
-Routing Agent, NetworkX graph'ı üzerinden alternatif yollar hesaplayabilmektedir.
+Routing mekanizması NetworkX graph'ını kullanmaktadır.
 
 Temel yaklaşım:
 
-1. Arızalı bağlantıyı graph hesaplamasından çıkar.
-2. Kalan topoloji üzerinde alternatif yol ara.
-3. En uygun yolu belirle.
-4. Recovery Agent'a gönder.
+1. Güncel graph alınır.
+2. Kullanılamayan veya arızalı link hesaplamadan çıkarılır.
+3. Kalan graph üzerinde alternatif yollar hesaplanır.
+4. Uygun shortest path seçilir.
+5. Recovery mekanizmasına yol bilgisi gönderilir.
 
-Kod içinde sabit:
+Kod içerisinde sabit:
 
 ```text
 path1
 path2
-OVS1 → OVS2 → ...
+OVS1 -> OVS2 -> ...
 ```
 
-gibi yol tanımları kullanılmamaktadır.
+şeklinde yol tanımları kullanılmamaktadır.
 
 ---
 
-# 19. Multi-Agent Mimarisi
+# 24. Aşama 5 — SDN Switch Stratejisi
 
-Projede dört temel agent bulunmaktadır.
+Aşama 5 kapsamında aşağıdaki kararlar uygulanmış ve doğrulanmıştır:
 
-## Monitoring Agent
+- OVS-1, OVS-2, OVS-3 ve OVS-4 SDN omurgası olarak korunmuştur.
+- Access switch'ler normal Ethernet switch olarak tutulmuştur.
+- Distribution switch'ler normal Ethernet switch olarak tutulmuştur.
+- SERVER tarafında normal Ethernet switch kullanılmaktadır.
+- Dört OVS OS-Ken controller'a bağlanmıştır.
+- OpenFlow 1.3 aktif edilmiştir.
+- `fail-mode=secure` uygulanmıştır.
+- Dört farklı DPID doğrulanmıştır.
+- LLDP tabanlı link keşfi doğrulanmıştır.
+
+**Aşama 5 tamamlanmıştır.**
+
+---
+
+# 25. Aşama 6 — Dinamik Topoloji ve Routing Doğrulaması
+
+Aşama 6 kapsamında yeni büyük ağ üzerindeki SDN davranışı canlı olarak yeniden test edilmiştir.
+
+## 25.1 Başlangıç Durumu
+
+Controller:
+
+```text
+4 switch
+4 link
+```
+
+keşfetmiştir.
+
+NetworkX üzerinde:
+
+```text
+4 node
+4 edge
+```
+
+graph oluşturulmuştur.
+
+Farklı switch çiftleri için:
+
+```text
+SHORTEST_PATH
+```
+
+hesaplarının üretildiği doğrulanmıştır.
+
+## 25.2 Kontrollü Link Failure
+
+Test amacıyla OVS-1 ile OVS-2 arasındaki doğrudan bağlantı GNS3 üzerinden geçici olarak **Suspend** edilmiştir.
+
+Sistem link arızasını algılamıştır.
+
+Controller logunda:
+
+```text
+LINK_FAILURE
+PORT_FAILED
+RECOVERY REQUEST
+FLOW_INSTALL_START
+FLOW_INSTALLED
+PATH_ACTIVE
+```
+
+olayları görülmüştür.
+
+## 25.3 Alternatif Yol
+
+Doğrudan OVS-1 ↔ OVS-2 bağlantısı kullanılamadığında sistem alternatif yolu dinamik olarak hesaplamıştır:
+
+```text
+OVS-1
+  |
+  v
+OVS-3
+  |
+  v
+OVS-4
+  |
+  v
+OVS-2
+```
+
+Alternatif yol için gerekli OpenFlow recovery flow'ları switch'lere kurulmuştur.
+
+## 25.4 Gerçek Trafik Testi
+
+SDN omurgasını doğrulamak amacıyla kullanılan test uçları:
+
+```text
+PC1 → 10.0.0.1/24
+PC2 → 10.0.0.2/24
+```
+
+OVS-1 ↔ OVS-2 linki kapalı durumdayken:
+
+```text
+PC1> ping 10.0.0.2
+```
+
+testi başarılı olmuştur.
+
+Böylece yalnızca controller'ın alternatif yol hesapladığı değil, gerçek veri trafiğinin de alternatif yol üzerinden devam ettiği doğrulanmıştır.
+
+Bu PC1/PC2 ağı SDN omurga doğrulama ağıdır; kurumsal VLAN kullanıcı ağlarından ayrıdır.
+
+## 25.5 Link Recovery
+
+Suspend edilen bağlantı tekrar **Resume** edilmiştir.
+
+Controller tarafından:
+
+```text
+LINK_ADDED
+LINK_UP
+PORT_RECOVERED
+```
+
+olayları algılanmıştır.
+
+Graph tekrar:
+
+```text
+node_count = 4
+edge_count = 4
+```
+
+durumuna dönmüştür.
+
+Port sağlık durumları yeniden:
+
+```text
+HEALTHY
+```
+
+olarak işaretlenmiştir.
+
+Doğrudan OVS-1 ↔ OVS-2 shortest path'i yeniden kullanılabilir hale gelmiştir.
+
+## 25.6 Son Trafik Testi
+
+Link geri geldikten sonra:
+
+```text
+PC1> ping 10.0.0.2
+```
+
+testi tekrar başarılı olmuştur.
+
+Sonuç olarak:
+
+- dinamik switch keşfi,
+- dinamik link keşfi,
+- graph güncelleme,
+- shortest-path hesaplama,
+- link failure algılama,
+- alternatif yol oluşturma,
+- recovery flow kurulumu,
+- gerçek trafik devamlılığı,
+- link recovery,
+- graph'ın eski durumuna dönmesi
+
+başarıyla doğrulanmıştır.
+
+**Aşama 6 tamamlanmıştır.**
+
+---
+
+# 26. Multi-Agent Mimarisi
+
+Repository içerisinde dört temel agent bulunmaktadır.
+
+Agent kodları baseline sistemde geliştirilmiş ve SDN controller ile ilişkili altyapıları oluşturulmuştur.
+
+Aşama 7'nin amacı bu agent'ların yeni kurumsal ağ üzerindeki görevlerini sistematik biçimde entegre etmek ve canlı senaryolarda birlikte çalışmalarını doğrulamaktır.
+
+---
+
+# 27. Monitoring Agent
 
 Dosya:
 
@@ -682,17 +932,27 @@ Dosya:
 agents/monitoring_agent.py
 ```
 
-Görevleri:
+Başlıca görevleri:
 
-- Port durumlarını takip etmek
-- RX/TX trafiğini izlemek
-- throughput hesaplamak
-- packet rate hesaplamak
-- drop/error sayaçlarını takip etmek
+- port durumlarını takip etmek,
+- RX/TX sayaçlarını okumak,
+- throughput hesaplamak,
+- packet rate hesaplamak,
+- drop sayaçlarını izlemek,
+- error sayaçlarını izlemek,
+- metrik event'leri üretmek.
+
+Controller loglarında canlı:
+
+```text
+[MONITORING] METRIC
+```
+
+kayıtları üretilebildiği doğrulanmıştır.
 
 ---
 
-## Failure Detection Agent
+# 28. Failure Detection Agent
 
 Dosya:
 
@@ -700,7 +960,7 @@ Dosya:
 agents/failure_agent.py
 ```
 
-Port ve link durumlarını:
+Port ve link sağlık durumlarını:
 
 ```text
 HEALTHY
@@ -708,11 +968,21 @@ DEGRADED
 FAILED
 ```
 
-olarak değerlendirebilir.
+olarak değerlendirmektedir.
+
+Link failure durumunda:
+
+```text
+LINK_FAILURE
+```
+
+event'i oluşturabilmektedir.
+
+Aşama 6 link kesintisi testinde failure mekanizmasının gerçek link arızasını algıladığı doğrulanmıştır.
 
 ---
 
-## Routing Agent
+# 29. Routing Agent
 
 Dosya:
 
@@ -720,16 +990,19 @@ Dosya:
 agents/routing_agent.py
 ```
 
-Görevi:
+Routing Agent:
 
-- arızalı bağlantıyı belirlemek,
-- NetworkX graph'ını kullanmak,
-- alternatif yol bulmak,
-- Recovery Agent'a recovery isteği göndermektir.
+- güncel NetworkX graph'ını kullanır,
+- arızalı bağlantıyı hesap dışında bırakır,
+- alternatif yolları değerlendirir,
+- deterministik bir alternatif yol seçer,
+- Recovery Agent'a recovery isteği gönderir.
+
+Canlı graph değiştirilmeden NetworkX görünümü üzerinden alternatif yol hesaplanmaktadır.
 
 ---
 
-## Recovery Agent
+# 30. Recovery Agent
 
 Dosya:
 
@@ -737,78 +1010,126 @@ Dosya:
 agents/recovery_agent.py
 ```
 
-Görevleri:
+Recovery Agent:
 
-- recovery isteğini doğrulamak,
-- alternatif yol için OpenFlow kuralları hazırlamak,
-- recovery flow'larını switch'lere göndermek,
-- bağlantı geri geldiğinde failback gerçekleştirmek.
+- Routing Agent'tan gelen recovery isteğini doğrular,
+- uygun trafik çiftlerini belirler,
+- alternatif yol boyunca OpenFlow flow'ları kurar,
+- recovery flow'larını normal forwarding flow'larından ayırır,
+- link geri geldiğinde recovery oturumunu yönetir.
 
-Recovery flow'ları normal forwarding flow'larından farklı cookie ve priority değerleriyle ayrılmaktadır.
+Recovery flow'ları ayrı cookie ve priority değerleri kullanmaktadır.
+
+Aşama 6 canlı testinde recovery flow'larının gerçek switch'lere yüklendiği doğrulanmıştır.
 
 ---
 
-# 20. Event-Driven Agent Haberleşmesi
+# 31. Event-Driven Agent Haberleşmesi
 
-Agent'lar birbirlerini doğrudan çağırmak yerine:
+Agent'lar arasındaki iletişim:
 
 ```text
 utils/event_bus.py
 ```
 
-içerisindeki EventBus üzerinden haberleşmektedir.
+içerisindeki EventBus yapısı üzerinden gerçekleştirilmektedir.
 
-Basitleştirilmiş akış:
-
-```text
-Monitoring
-    ↓
-Failure Detection
-    ↓
-Routing
-    ↓
-Recovery
-```
-
-Bu yapı modülerliği artırmakta ve ileride yeni agent'ların sisteme eklenmesini kolaylaştırmaktadır.
-
----
-
-# 21. Self-Healing Akışı
-
-Mevcut baseline SDN çekirdeğinde self-healing mantığı:
+Genel akış:
 
 ```text
-Link arızası
-    ↓
 Monitoring Agent
-    ↓
+       |
+       v
 Failure Detection Agent
-    ↓
-LINK_FAILURE
-    ↓
+       |
+       v
 Routing Agent
-    ↓
-Alternatif yol
-    ↓
+       |
+       v
 Recovery Agent
-    ↓
-OpenFlow recovery flow'ları
 ```
 
-Link geri geldiğinde sistem:
-
-```text
-FAILBACK_PENDING
-```
-
-durumuna geçebilir ve kararlılık süresi sonrasında recovery flow'larını kaldırarak normal forwarding yapısına dönebilir.
+Bu yaklaşım agent'ların birbirlerine doğrudan bağımlılığını azaltmakta ve sisteme yeni agent eklenmesini kolaylaştırmaktadır.
 
 ---
 
-# 22. Dashboard
+# 32. Self-Healing Akışı
 
-Projenin mevcut baseline SDN çekirdeği için Streamlit tabanlı bir dashboard geliştirilmiştir.
+Mevcut self-healing akışı:
+
+```text
+Link / Port Problemi
+        |
+        v
+Monitoring Agent
+        |
+        v
+Failure Detection Agent
+        |
+        v
+LINK_FAILURE
+        |
+        v
+Routing Agent
+        |
+        v
+NetworkX Alternative Path
+        |
+        v
+Recovery Agent
+        |
+        v
+OpenFlow Recovery Flows
+        |
+        v
+Traffic Continues
+```
+
+Bağlantı geri geldiğinde sistem link recovery durumunu algılar ve normal forwarding yapısına dönüş sürecini yönetebilir.
+
+Aşama 8'de bu mekanizma kontrollü deneylerle ve ölçümlerle ayrıntılı olarak test edilecektir.
+
+---
+
+# 33. Startup Automation
+
+SDN ortamını tekrar ayağa kaldırmayı kolaylaştırmak için:
+
+```text
+start_sdn.sh
+```
+
+scripti kullanılmaktadır.
+
+Script:
+
+- çalışan GNS3 OVS container'larını keşfeder,
+- management portlarını belirler,
+- management IP'lerini alır,
+- controller bağlantısını ayarlar,
+- OpenFlow 1.3'ü etkinleştirir,
+- `fail-mode=secure` ayarını doğrular,
+- OS-Ken controller'ın durumunu kontrol eder,
+- controller zaten çalışıyorsa ikinci bir instance başlatmaz.
+
+Başlatma:
+
+```bash
+cd ~/smart-sdn-gns3
+./start_sdn.sh
+```
+
+Controller logu:
+
+```bash
+tail -f logs/controller.log
+```
+
+---
+
+# 34. Dashboard
+
+Projede Streamlit tabanlı bir dashboard bulunmaktadır.
 
 Dosya:
 
@@ -816,7 +1137,7 @@ Dosya:
 dashboard/app.py
 ```
 
-Dashboard üzerinden:
+Dashboard ile:
 
 - controller durumu,
 - switch sayısı,
@@ -830,7 +1151,7 @@ Dashboard üzerinden:
 
 izlenebilmektedir.
 
-Dashboard sisteme müdahale etmez; salt okunur bir gözlem katmanıdır.
+Dashboard ağ kontrolüne doğrudan müdahale etmez; gözlem katmanı olarak tasarlanmıştır.
 
 Runtime verileri:
 
@@ -842,30 +1163,9 @@ runtime/state.json
 
 ---
 
-# 23. Startup Automation
+# 35. Testler
 
-Baseline SDN ortamında OVS ve controller başlangıç işlemlerini kolaylaştırmak amacıyla:
-
-```text
-start_sdn.sh
-```
-
-geliştirilmiştir.
-
-Script:
-
-- çalışan GNS3 Open vSwitch container'larını keşfeder,
-- management portlarını belirler,
-- DHCP ile management IP'si alır,
-- controller bağlantısını ayarlar,
-- OpenFlow 1.3 yapılandırmasını kontrol eder,
-- controller'ı başlatabilir.
-
----
-
-# 24. Testler
-
-Multi-Agent ve routing bileşenleri için offline testler bulunmaktadır.
+Repository içerisinde agent ve runtime bileşenleri için offline testler bulunmaktadır.
 
 ```text
 tests/test_failure_agent_offline.py
@@ -874,23 +1174,23 @@ tests/test_recovery_agent_offline.py
 tests/test_runtime_state_offline.py
 ```
 
-Baseline SDN çekirdeğinde toplam:
+Mevcut baseline test paketi README içerisinde:
 
 ```text
 41 offline test
 ```
 
-başarıyla çalıştırılmıştır.
+olarak dokümante edilmiştir.
 
-> Bu testler mevcut agent kodunun davranışlarını doğrulamaktadır. Yeni `v2_Work` kurumsal topolojisi üzerindeki canlı SDN entegrasyonu Aşama 5 ve sonrasında yeniden doğrulanacaktır.
+Buna ek olarak Aşama 5–6 kapsamında gerçek GNS3 ortamında canlı SDN doğrulamaları yapılmıştır.
 
 ---
 
-# 25. Repository Yapısı
+# 36. Repository Yapısı
 
 ```text
 smart-sdn-gns3/
-│
+|
 ├── agents/
 │   ├── monitoring_agent.py
 │   ├── failure_agent.py
@@ -950,43 +1250,56 @@ smart-sdn-gns3/
 └── .gitignore
 ```
 
-Runtime, Docker veri alanı, veritabanı binary dosyaları, paketler ve hassas bilgiler GitHub deposuna dahil edilmez.
-
 ---
 
-# 26. Güvenlik ve Repository Politikası
+# 37. Repository Güvenliği
 
-Aşağıdaki dosyalar GitHub'a gönderilmez:
+Runtime dosyaları, sanal ortamlar, paketler, container veri alanları ve hassas bilgiler GitHub repository'sine dahil edilmez.
+
+`.gitignore` içerisinde diğerlerinin yanında:
 
 ```text
 .env
 .venv/
+venv/
 logs/
 runtime/
 *.log
 *.apk
-db-data/
-db-pkgs/
-web-pkgs/
+*.pcap
+*.pcapng
+*.vdi
+*.vmdk
+*.qcow2
+*.iso
+*.pem
+*.key
+*.p12
+*.pfx
 project-files/
 snapshots/
 *.gns3project
 .streamlit/secrets.toml
+db-data/
+db-pkgs/
+web-pkgs/
 ```
 
-Ayrıca:
+dosya ve dizinleri ignore edilmektedir.
 
-- veritabanı parolaları,
+Repository içerisinde:
+
+- GitHub token'ları,
 - API key'leri,
-- token'lar,
-- özel anahtarlar,
-- container runtime verileri
+- gerçek veritabanı parolaları,
+- private key'ler,
+- runtime secret'ları
 
-repository içerisinde tutulmaz.
+tutulmamalıdır.
 
 ---
 
-# 27. Güncel Yol Haritası
+# 38. Güncel Yol Haritası
 
 | Aşama | Açıklama | Durum |
 |---|---|---|
@@ -995,64 +1308,120 @@ repository içerisinde tutulmaz.
 | **2** | Access katmanı ve yeni uç cihazlar | ✅ Tamamlandı |
 | **3** | VLAN ve ağ segmentasyonu | ✅ Tamamlandı |
 | **4** | Firewall, SERVER/DMZ, WEB, DNS ve DB altyapısı | ✅ Tamamlandı |
-| **5** | SDN switch stratejisini netleştirme | ➡️ **Sıradaki aşama** |
-| **6** | Dinamik topoloji ve routing'i yeni ağda yeniden doğrulama | ⏳ Planlandı |
-| **7** | Multi-Agent mimariyi yeni ağla entegre etme | ⏳ Planlandı |
-| **8** | Self-Healing ve ölçümlü failure/recovery testleri | ⏳ Planlandı |
+| **5** | SDN switch stratejisini netleştirme | ✅ Tamamlandı |
+| **6** | Dinamik topoloji ve routing'i yeni ağda yeniden doğrulama | ✅ Tamamlandı |
+| **7** | Multi-Agent mimariyi yeni kurumsal ağla tam entegre etme ve doğrulama | ➡️ **Sıradaki aşama** |
+| **8** | Ölçümlü Self-Healing senaryoları | ⏳ Planlandı |
 | **9** | İzleme verilerinden dataset oluşturma | ⏳ Planlandı |
 | **10** | AI / Anomali Detection Agent | ⏳ Planlandı |
-| **11** | Güvenlik saldırı ve politika senaryolarını genişletme | ⏳ Planlandı |
-| **12** | Dashboard, deneyler ve akademik karşılaştırma | ⏳ Planlandı |
+| **11** | Güvenlik ve politika senaryolarını genişletme | ⏳ Planlandı |
+| **12** | Deneyler, dashboard ve akademik karşılaştırma | ⏳ Planlandı |
 
 ---
 
-# 28. Aşama 0–4 Sonunda Elde Edilen Yapı
+# 39. Aşama 0–6 Sonunda Elde Edilen Yapı
 
-Şu anda çalışan altyapı özetle:
+Aşama 0–6 sonunda sistem iki ana katmanı bir araya getirmektedir.
 
 ```text
-                         INTERNET
-                            |
-                         ROUTER-1
-                            |
-          -------------------------------------
-          |        |        |        |        |
-       VLAN10   VLAN20   VLAN30   VLAN40   VLAN50
-       ADMIN    STAFF    GUEST    STUDENT   SERVER
+                    KURUMSAL AĞ
+                         |
+                     ROUTER-1
+                         |
+       --------------------------------------
+       |        |        |        |         |
+     ADMIN    STAFF    GUEST   STUDENT    SERVER
+      VLAN     VLAN     VLAN     VLAN       VLAN
                                              |
                               -----------------------------
                               |             |             |
                          WEB-SERVER    DNS-SERVER    DB-SERVER
-                         10.10.50.10   10.10.50.53   10.10.50.20
-                              |                           |
-                              -------- MariaDB -----------
 ```
 
-Bunun altında SDN omurgası ve Open vSwitch altyapısı bulunmaktadır.
+Bunun altında SDN kontrollü omurga bulunmaktadır:
 
-Aşama 5'te amaç, mevcut OVS cihazlarının yeni mimarideki rollerini kesinleştirmek ve hangi bağlantıların gerçekten **SDN/OpenFlow kontrolüne** bırakılacağını belirlemektir.
+```text
+                OS-Ken Controller
+                       |
+                 OpenFlow 1.3
+                       |
+          ---------------------------
+          |            |            |
+        OVS-1 ------ OVS-2           |
+          |            |             |
+        OVS-3 ------ OVS-4           |
+          ---------------------------
+                 SDN Backbone
+```
+
+Controller:
+
+- switch'leri dinamik keşfetmekte,
+- linkleri LLDP ile keşfetmekte,
+- NetworkX graph oluşturmakta,
+- shortest path hesaplamakta,
+- link failure durumunda alternatif yol üretebilmekte,
+- recovery flow'larını uygulayabilmektedir.
+
+---
+
+# 40. Sıradaki Aşama
+
+## Aşama 7 — Multi-Agent Entegrasyonu
+
+Agent modülleri repository içerisinde zaten bulunmaktadır.
+
+Aşama 7'de amaç bu agent'ları sıfırdan oluşturmak değil; mevcut:
+
+```text
+Monitoring Agent
+Failure Detection Agent
+Routing Agent
+Recovery Agent
+```
+
+bileşenlerinin yeni kurumsal GNS3 topolojisi üzerindeki görevlerini sistematik olarak doğrulamak ve birbirleriyle tam entegrasyonunu tamamlamaktır.
+
+Bu aşamada özellikle:
+
+- gerçek ağ metriklerinin Monitoring Agent tarafından toplanması,
+- Failure Detection Agent'ın yeni ağ üzerinde olay üretmesi,
+- Routing Agent'ın güncel kurumsal graph üzerinde karar vermesi,
+- Recovery Agent'ın gerçek OpenFlow flow'larını uygulaması,
+- agent event zincirinin doğrulanması,
+- runtime state bilgilerinin güncellenmesi,
+- dashboard'a doğru verilerin aktarılması
+
+kontrol edilecektir.
 
 ---
 
 # Sonuç
 
-Projenin ilk bölümünde yalnızca bir SDN laboratuvar topolojisi oluşturmak yerine, gerçek bir ağda karşılaşılabilecek:
+Proje başlangıçtaki küçük SDN laboratuvarından çıkarılarak gerçek bir kurum ağında karşılaşılabilecek:
 
-- kullanıcı segmentasyonu,
+- ağ segmentasyonu,
 - VLAN,
-- routing,
+- Layer-3 routing,
 - NAT,
-- firewall,
+- stateful firewall,
+- rol bazlı erişim kontrolü,
 - DNS,
 - web servisi,
 - veritabanı,
 - servisler arası iletişim,
-- kalıcı yapılandırma
+- kalıcı yapılandırma,
+- SDN kontrollü omurga,
+- dinamik topoloji keşfi,
+- graph tabanlı routing,
+- link failure detection,
+- alternatif yol hesaplama,
+- OpenFlow tabanlı recovery
 
-gibi bileşenler de sisteme eklenmiştir.
+özelliklerini içeren daha kapsamlı bir yapıya dönüştürülmüştür.
 
-Böylece sonraki aşamalardaki **SDN, Multi-Agent, Self-Healing ve AI çalışmalarının test edilebileceği daha gerçekçi bir altyapı** hazırlanmıştır.
+Aşama 6 sonunda SDN omurgasının link arızası sırasında gerçek trafiği alternatif yoldan devam ettirebildiği ve bağlantı geri geldiğinde topolojiyi otomatik olarak güncelleyebildiği canlı GNS3 ortamında doğrulanmıştır.
 
 Bir sonraki geliştirme adımı:
 
-> **Aşama 5 — SDN Switch Stratejisinin Netleştirilmesi**
+> **Aşama 7 — Multi-Agent Entegrasyonu**
