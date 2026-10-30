@@ -23,6 +23,7 @@ import streamlit as st
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import state_reader as sr  # noqa: E402
+import presentation as pres  # noqa: E402
 
 REFRESH_SEC = 2
 
@@ -369,7 +370,7 @@ def _path_edges(path):
     return [(a, b) for a, b in zip(path, path[1:])]
 
 
-def topology_figure(state, names, inventory, show_hosts):
+def topology_figure(state, names, inventory, show_hosts, presentation=False):
     switches = dict((s["dpid"], s) for s in as_list(state.get("switches"))
                     if isinstance(s, dict) and s.get("dpid"))
     offline = dict((i["dpid"], i) for i in inventory
@@ -406,9 +407,15 @@ def topology_figure(state, names, inventory, show_hosts):
     # 2) Son routing kararı (incident kapanmadıysa)
     route = as_dict(state.get("latest_route"))
     inc = as_dict(state.get("latest_failure"))
-    if (route.get("path") and not rec_edges and inc and
-            inc.get("status") not in ("RESTORED", "LINK_RESTORED",
-                                      "INVALIDATED")):
+    if presentation:
+        # Geçmiş rotayı güncel gibi gösterme: yalnızca link şu an gerçekten
+        # arızalıysa hesaplanan alternatif gösterilir.
+        route_live = route.get("affected_link") in set(
+            l.get("id") for l in failed)
+    else:
+        route_live = inc and inc.get("status") not in (
+            "RESTORED", "LINK_RESTORED", "INVALIDATED")
+    if route.get("path") and not rec_edges and route_live:
         tr = _line_trace(_path_edges(route["path"]), pos,
                          "Son alternatif rota (Routing)", C["violet"], 11,
                          opacity=0.3)
@@ -417,12 +424,20 @@ def topology_figure(state, names, inventory, show_hosts):
     # 3) Linkler
     up = [(l["a"], l["b"]) for l in links if l.get("status") != "DEGRADED"]
     deg = [(l["a"], l["b"]) for l in links if l.get("status") == "DEGRADED"]
+    lw = 4 if presentation else 3
     for edges, name, color, width, dash in (
-            (up, "Aktif link", C["blue"], 3, None),
-            (deg, "DEGRADED link", C["amber"], 3.5, "dot"),
-            ([(l["a"], l["b"]) for l in failed], "FAILED link", C["red"],
-             3.5, "dash")):
+            (up, "Çalışan bağlantı" if presentation else "Aktif link",
+             C["blue"], lw, None),
+            (deg, "DEGRADED link", C["amber"], lw + .5, "dot"),
+            ([(l["a"], l["b"]) for l in failed],
+             "Kopmuş bağlantı" if presentation else "FAILED link", C["red"],
+             lw + .5, "dash")):
         tr = _line_trace(edges, pos, name, color, width, dash)
+        if tr:
+            fig.add_trace(tr)
+    if presentation and rec_edges:
+        tr = _line_trace(sorted(rec_edges), pos, "Aktif kurtarma yolu",
+                         C["green"], 5)
         if tr:
             fig.add_trace(tr)
     # Host bağlantıları
@@ -461,7 +476,9 @@ def topology_figure(state, names, inventory, show_hosts):
     if lx:
         fig.add_trace(go.Scatter(
             x=lx, y=ly, mode="text", text=lt, hoverinfo="skip",
-            textfont=dict(size=10, color=C["muted"]), showlegend=False))
+            textfont=dict(size=13 if presentation else 10,
+                          color=C["text"] if presentation else C["muted"]),
+            showlegend=False))
     if hx:
         fig.add_trace(go.Scatter(
             x=hx, y=hy, mode="markers", hovertext=htext, hoverinfo="text",
@@ -518,14 +535,15 @@ def topology_figure(state, names, inventory, show_hosts):
     fig.add_trace(go.Scatter(
         x=xs, y=ys, mode="markers+text", name="Switch", text=texts,
         textposition="bottom center",
-        textfont=dict(size=13, color=C["text"]),
+        textfont=dict(size=16 if presentation else 13, color=C["text"]),
         hovertext=hovers, hoverinfo="text",
-        marker=dict(size=40, color=colors, symbol="circle",
+        marker=dict(size=46 if presentation else 40, color=colors,
+                    symbol="circle",
                     line=dict(color="#0b1120", width=3),
                     opacity=0.95)))
 
     fig.update_layout(
-        template="plotly_dark", height=540,
+        template="plotly_dark", height=430 if presentation else 540,
         margin=dict(l=10, r=10, t=10, b=10),
         paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
         xaxis=dict(visible=False, range=_axis_range(pos, 0)),
@@ -1015,6 +1033,9 @@ def live_view():
                     'kullanılıyor)</div>' % esc(err), unsafe_allow_html=True)
 
     names = sr.name_map(state, inventory)
+    if st.session_state.get("view_mode") == pres.MODE_NAME:
+        pres.render(state, status, names, inventory, topology_figure)
+        return
     render_kpis(state, status, inventory)
 
     left, right = st.columns([1.45, 1], gap="medium")
@@ -1056,6 +1077,14 @@ def main():
     st.set_page_config(page_title="Smart SDN Dashboard", page_icon="🛰️",
                        layout="wide", initial_sidebar_state="collapsed")
     st.markdown(CSS, unsafe_allow_html=True)
+    st.markdown(pres.CSS, unsafe_allow_html=True)
+    modes = [pres.DETAIL_NAME, pres.MODE_NAME]
+    if "view_mode" not in st.session_state:
+        wanted = str(st.query_params.get("mode", "")).lower()
+        st.session_state["view_mode"] = (pres.MODE_NAME if wanted == "sunum"
+                                         else pres.DETAIL_NAME)
+    st.radio("Görünüm", modes, key="view_mode", horizontal=True,
+             label_visibility="collapsed")
     with st.sidebar:
         st.markdown("### Ayarlar")
         st.toggle("Canlı yenileme (%d sn)" % REFRESH_SEC, value=True,
