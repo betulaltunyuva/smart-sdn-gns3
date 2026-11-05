@@ -26,6 +26,12 @@ Bu agent'lar birlikte çalışarak arıza tespiti, alternatif yol hesaplama, kur
 
 Sistemin durumunu canlı izleyebilmek amacıyla Streamlit kullanarak bir Dashboard ve Sunum Modu da geliştirdim.
 
+Aynı ağdaki cihazların iletişimi switch'ler üzerinden, farklı VLAN'lardaki cihazların iletişimi ise router üzerinden sağlanıyor.
+
+SDN bölümünde Controller ile Open vSwitch cihazları OpenFlow 1.3 protokolüyle haberleşiyor.
+
+Switch'ler arasındaki bağlantıları keşfetmek için LLDP kullanıyorum. Controller içerisindeki dört agent ise EventBus üzerinden olay paylaşarak haberleşiyor.
+
 ### Projenin normal ağ simülasyonundan farkı
 
 Projem yalnızca GNS3'te switch ve router cihazlarını birbirine bağlamaktan oluşmamaktadır.
