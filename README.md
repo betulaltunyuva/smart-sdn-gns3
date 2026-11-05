@@ -127,9 +127,9 @@ Alan adlarını IP adreslerine dönüştürmek için kullanıldı.
 
 ## MariaDB — Veritabanı Sunucusu
 
-Kampüs ağının yalnızca temel ağ bağlantılarından oluşmaması, gerçek bir kurumsal ağdaki uygulama servislerini de içermesi amacıyla **MariaDB veritabanı sunucusu** yapılandırılmıştır.
+Kampüs ağında gerçek bir veritabanı hizmeti sunmak ve uygulama seviyesinde ağ iletişimini doğrulamak amacıyla **MariaDB** kullanılmıştır.
 
-GNS3 üzerinde oluşturulan DB-SERVER cihazında MariaDB kullanılarak veritabanı hizmeti sağlanmıştır. Bu sayede ağdaki cihazların yalnızca ICMP (ping) üzerinden değil, gerçek veritabanı sorguları aracılığıyla da iletişim kurabildiği test edilmiştir.
+DB-SERVER üzerinde `smart_sdn` veritabanı oluşturulmuş ve veritabanına erişim için `webapp` adlı kullanıcı yapılandırılmıştır. `network_status` tablosu üzerinden SQL sorguları gerçekleştirilerek veritabanı erişimi test edilmiştir.
 
 ### Veritabanı Yapılandırması
 
@@ -139,22 +139,18 @@ GNS3 üzerinde oluşturulan DB-SERVER cihazında MariaDB kullanılarak veritaban
 | IP adresi | `10.10.50.20` |
 | Port | `3306` |
 | Veritabanı | `smart_sdn` |
+| Kullanıcı | `webapp` |
 | Tablo | `network_status` |
-| Veritabanı sistemi | MariaDB |
 
-### Veritabanına Bağlanma ve Doğrulama
+### Veritabanına Bağlantı ve Doğrulama
 
-GNS3 üzerinde **DB-SERVER → Sağ tık → Console** adımları izlenerek sunucu konsolu açılır.
-
-MariaDB'ye yerel bağlantı için:
+GNS3 üzerinde DB-SERVER konsolundan aşağıdaki komut ile bağlantı kurulur:
 
 ```bash
-mariadb -u root --socket=/run/mysqld/mysqld.sock
+mariadb -h 10.10.50.20 -P 3306 -u webapp -p
 ```
 
-Şifreyle kimlik doğrulama gerekiyorsa `-p` parametresi kullanılır.
-
-Bağlantı sağlandıktan sonra aşağıdaki SQL sorgularıyla veritabanı ve tablo yapısı kontrol edilir:
+Şifre girildikten sonra veritabanı ve tablolar aşağıdaki sorgularla kontrol edilir:
 
 ```sql
 SHOW DATABASES;
@@ -163,16 +159,11 @@ SHOW TABLES;
 SELECT * FROM network_status LIMIT 5;
 ```
 
-Bu sorgular veritabanının mevcut olduğunu, ilgili tablonun erişilebilirliğini ve içerisindeki örnek kayıtları gösterir.
-
 ### SDN Sistemiyle İlişkisi
 
-MariaDB, kampüs ağındaki **uygulama ve sunucu altyapısının** bir parçasıdır. SDN Controller'ın alternatif rota hesaplama veya otomatik kurtarma mekanizmasında doğrudan kullanılmamaktadır.
+MariaDB, kampüs ağının uygulama sunucusu altyapısında kullanılmaktadır. Alternatif rota hesaplama veya otomatik kurtarma işlemlerinde doğrudan görev almamaktadır.
 
-Arıza tespiti, dinamik yönlendirme ve kurtarma işlemleri OS-Ken Controller ile Monitoring, Failure Detection, Routing ve Recovery agent'ları tarafından yürütülmektedir.
-
-**Sonuç:** MariaDB entegrasyonu sayesinde kampüs ağında temel bağlantı testlerinin yanında gerçek bir veritabanı hizmetinin çalışması ve ağ üzerinden erişilebilirliği de doğrulanmıştır.
-
+**Sonuç:** Kampüs ağında yalnızca temel bağlantıların değil, gerçek bir veritabanı servisine erişimin de test edilmesi sağlanmıştır.
 
 ---
 
