@@ -125,13 +125,54 @@ Alan adlarını IP adreslerine dönüştürmek için kullanıldı.
 - web.sdn.test
 - db.sdn.test
 
-### MariaDB
+## MariaDB — Veritabanı Sunucusu
 
-Kampüs ağındaki veritabanı hizmetini oluşturmak için kullanıldı.
+Kampüs ağının yalnızca temel ağ bağlantılarından oluşmaması, gerçek bir kurumsal ağdaki uygulama servislerini de içermesi amacıyla **MariaDB veritabanı sunucusu** yapılandırılmıştır.
 
-`smart_sdn` adlı veritabanı ve `network_status` tablosu üzerinden sorgu işlemleri test edildi.
+GNS3 üzerinde oluşturulan DB-SERVER cihazında MariaDB kullanılarak veritabanı hizmeti sağlanmıştır. Bu sayede ağdaki cihazların yalnızca ICMP (ping) üzerinden değil, gerçek veritabanı sorguları aracılığıyla da iletişim kurabildiği test edilmiştir.
 
-MariaDB'nin amacı **SDN'nin alternatif rotasını hesaplamak değil**, kampüs ağındaki gerçek bir veritabanı hizmetini temsil etmektir.
+### Veritabanı Yapılandırması
+
+| Özellik | Değer |
+|---|---|
+| Sunucu | DB-SERVER |
+| IP adresi | `10.10.50.20` |
+| Port | `3306` |
+| Veritabanı | `smart_sdn` |
+| Tablo | `network_status` |
+| Veritabanı sistemi | MariaDB |
+
+### Veritabanına Bağlanma ve Doğrulama
+
+GNS3 üzerinde **DB-SERVER → Sağ tık → Console** adımları izlenerek sunucu konsolu açılır.
+
+MariaDB'ye yerel bağlantı için:
+
+```bash
+mariadb -u root --socket=/run/mysqld/mysqld.sock
+```
+
+Şifreyle kimlik doğrulama gerekiyorsa `-p` parametresi kullanılır.
+
+Bağlantı sağlandıktan sonra aşağıdaki SQL sorgularıyla veritabanı ve tablo yapısı kontrol edilir:
+
+```sql
+SHOW DATABASES;
+USE smart_sdn;
+SHOW TABLES;
+SELECT * FROM network_status LIMIT 5;
+```
+
+Bu sorgular veritabanının mevcut olduğunu, ilgili tablonun erişilebilirliğini ve içerisindeki örnek kayıtları gösterir.
+
+### SDN Sistemiyle İlişkisi
+
+MariaDB, kampüs ağındaki **uygulama ve sunucu altyapısının** bir parçasıdır. SDN Controller'ın alternatif rota hesaplama veya otomatik kurtarma mekanizmasında doğrudan kullanılmamaktadır.
+
+Arıza tespiti, dinamik yönlendirme ve kurtarma işlemleri OS-Ken Controller ile Monitoring, Failure Detection, Routing ve Recovery agent'ları tarafından yürütülmektedir.
+
+**Sonuç:** MariaDB entegrasyonu sayesinde kampüs ağında temel bağlantı testlerinin yanında gerçek bir veritabanı hizmetinin çalışması ve ağ üzerinden erişilebilirliği de doğrulanmıştır.
+
 
 ---
 
