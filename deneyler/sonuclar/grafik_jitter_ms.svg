@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="360" viewBox="0 0 640 360" font-family="Helvetica, Arial, sans-serif">
+<rect width="100%%" height="100%%" fill="#fcfcfb"/>
+<text x="64" y="26" font-size="16" font-weight="600" fill="#0b0b0b">Jitter (ardışık |ΔRTT| ort.) (ms)</text>
+<text x="64" y="46" font-size="11" fill="#5f5e5a">Çubuk: tekrar ortalaması · nokta: tek tekrar · PC1 → PC2</text>
+<line x1="64" x2="620" y1="288.0" y2="288.0" stroke="#5f5e5a"/>
+<text x="56" y="292.0" font-size="11" fill="#5f5e5a" text-anchor="end">0.00</text>
+<line x1="64" x2="620" y1="232.0" y2="232.0" stroke="#e4e3df"/>
+<text x="56" y="236.0" font-size="11" fill="#5f5e5a" text-anchor="end">6.25</text>
+<line x1="64" x2="620" y1="176.0" y2="176.0" stroke="#e4e3df"/>
+<text x="56" y="180.0" font-size="11" fill="#5f5e5a" text-anchor="end">12.5</text>
+<line x1="64" x2="620" y1="120.0" y2="120.0" stroke="#e4e3df"/>
+<text x="56" y="124.0" font-size="11" fill="#5f5e5a" text-anchor="end">18.8</text>
+<line x1="64" x2="620" y1="64.0" y2="64.0" stroke="#e4e3df"/>
+<text x="56" y="68.0" font-size="11" fill="#5f5e5a" text-anchor="end">25.0</text>
+<g><title>Normal ağ iletişimi: ort 8.78 ms (n=3; 11.5, 5.92, 8.87)</title>
+<path d="M98.8 288.0 v-74.7 a4 4 0 0 1 4 -4 h61.5 a4 4 0 0 1 4 4 v74.7 z" fill="#2a78d6" fill-opacity="0.85"/>
+<circle cx="121.5" cy="184.5" r="4.5" fill="#0b0b0b" stroke="#fcfcfb" stroke-width="2"/>
+<circle cx="133.5" cy="234.9" r="4.5" fill="#0b0b0b" stroke="#fcfcfb" stroke-width="2"/>
+<circle cx="145.5" cy="208.5" r="4.5" fill="#0b0b0b" stroke="#fcfcfb" stroke-width="2"/>
+<text x="133.5" y="174.5" font-size="12" font-weight="600" fill="#0b0b0b" text-anchor="middle">8.78</text>
+<text x="133.5" y="306" font-size="11" fill="#0b0b0b" text-anchor="middle">normal</text>
+<text x="133.5" y="322" font-size="10" fill="#5f5e5a" text-anchor="middle">n=3</text></g>
+<g><title>Bağlantı kopması (ping sırasında Suspend): ort 7.85 ms (n=3; 7.61, 6.55, 9.40)</title>
+<path d="M237.8 288.0 v-66.4 a4 4 0 0 1 4 -4 h61.5 a4 4 0 0 1 4 4 v66.4 z" fill="#eb6834" fill-opacity="0.85"/>
+<circle cx="260.5" cy="219.8" r="4.5" fill="#0b0b0b" stroke="#fcfcfb" stroke-width="2"/>
+<circle cx="272.5" cy="229.3" r="4.5" fill="#0b0b0b" stroke="#fcfcfb" stroke-width="2"/>
+<circle cx="284.5" cy="203.8" r="4.5" fill="#0b0b0b" stroke="#fcfcfb" stroke-width="2"/>
+<text x="272.5" y="193.8" font-size="12" font-weight="600" fill="#0b0b0b" text-anchor="middle">7.85</text>
+<text x="272.5" y="306" font-size="11" fill="#0b0b0b" text-anchor="middle">baglanti_kopmasi</text>
+<text x="272.5" y="322" font-size="10" fill="#5f5e5a" text-anchor="middle">n=3</text></g>
+<g><title>Otomatik kurtarma (link kopukken alternatif yol): ort 16.0 ms (n=3; 9.37, 23.8, 14.8)</title>
+<path d="M376.8 288.0 v-139.3 a4 4 0 0 1 4 -4 h61.5 a4 4 0 0 1 4 4 v139.3 z" fill="#1baf7a" fill-opacity="0.85"/>
+<circle cx="399.5" cy="204.1" r="4.5" fill="#0b0b0b" stroke="#fcfcfb" stroke-width="2"/>
+<circle cx="411.5" cy="74.3" r="4.5" fill="#0b0b0b" stroke="#fcfcfb" stroke-width="2"/>
+<circle cx="423.5" cy="155.6" r="4.5" fill="#0b0b0b" stroke="#fcfcfb" stroke-width="2"/>
+<text x="411.5" y="64.3" font-size="12" font-weight="600" fill="#0b0b0b" text-anchor="middle">16.0</text>
+<text x="411.5" y="306" font-size="11" fill="#0b0b0b" text-anchor="middle">otomatik_kurtarma</text>
+<text x="411.5" y="322" font-size="10" fill="#5f5e5a" text-anchor="middle">n=3</text></g>
+<g><title>Failback (ping sırasında Resume): ort 10.6 ms (n=3; 11.5, 2.92, 17.4)</title>
+<path d="M515.8 288.0 v-91.1 a4 4 0 0 1 4 -4 h61.5 a4 4 0 0 1 4 4 v91.1 z" fill="#eda100" fill-opacity="0.85"/>
+<circle cx="538.5" cy="185.1" r="4.5" fill="#0b0b0b" stroke="#fcfcfb" stroke-width="2"/>
+<circle cx="550.5" cy="261.9" r="4.5" fill="#0b0b0b" stroke="#fcfcfb" stroke-width="2"/>
+<circle cx="562.5" cy="131.7" r="4.5" fill="#0b0b0b" stroke="#fcfcfb" stroke-width="2"/>
+<text x="550.5" y="121.7" font-size="12" font-weight="600" fill="#0b0b0b" text-anchor="middle">10.6</text>
+<text x="550.5" y="306" font-size="11" fill="#0b0b0b" text-anchor="middle">failback</text>
+<text x="550.5" y="322" font-size="10" fill="#5f5e5a" text-anchor="middle">n=3</text></g>
+</svg>
