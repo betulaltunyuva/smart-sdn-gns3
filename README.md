@@ -521,7 +521,7 @@ Okuma notları:
 
 ### 19.1 Aşama 8'in doğrulanmış özeti
 
-Aşama 8 deneyleri 21–22 Kasım 2026'da yapılmış ve 22 Kasım'da commit edilmiştir (`d42c1b6`); bu hafta bu sonuçlar kod, ham veri ve raporlarla yeniden karşılaştırılmış, yeni deney yapılmamıştır. Doğrulanan durum:
+Aşama 8 ve Aşama 9 bu haftanın (23–24 Kasım 2026) sunum kapsamındadır. Aşama 8 deneyleri **21–22 Kasım 2026'da** yapılmış ve 22 Kasım'da commit edilmiştir (`d42c1b6`); bu hafta bu sonuçlar kod, ham veri ve raporlarla yeniden karşılaştırılmış, yeni deney yapılmamıştır. Doğrulanan durum:
 
 | Konu | Doğrulanan sonuç |
 |:--|:--|

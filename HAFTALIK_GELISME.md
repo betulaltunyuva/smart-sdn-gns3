@@ -380,16 +380,17 @@ Sonuçlar [`deneyler/sonuclar/`](deneyler/sonuclar/) altında `deney_sonuclari.c
 - Bu belge kronolojik biçimde güncellendi.
 - Offline testler çalıştırıldı: 41 ajan/runtime testi ve 27 analiz aracı testi geçti.
 
-## Hafta 10: 23–24 Kasım 2026 | Aşama 8 ve Aşama 9
+## 23–24 Kasım 2026 | Aşama 8 ve Aşama 9
 
-> **Tarih notu.** Aşama 8 deneyleri 21–22 Kasım'da yapılmış ve 22 Kasım'da commit edilmiştir (yukarıdaki Hafta 9). Bu hafta Aşama 8 sonuçları kod, ham veri ve raporlarla yeniden doğrulanıp özetlenmiş; yeni Aşama 8 deneyi yapılmamıştır. Yeni üretilen çalışma Aşama 9'dur (23–24 Kasım).
+> **Sunum kapsamı ve tarih notu.** Aşama 8 ve Aşama 9, bu haftanın (23–24 Kasım 2026) sunum kapsamındadır. Ancak gerçek tarihleri farklıdır: **Aşama 8 deneyleri 21–22 Kasım 2026'da gerçekleştirilmiş** ve 22 Kasım'da commit edilmiştir (`d42c1b6`, yukarıdaki "Hafta 9"); bu hafta değerlendirmeye dahil edilmiş, sonuçları kod ve kayıtlarla yeniden doğrulanmış, yeni Aşama 8 deneyi yapılmamıştır. **Aşama 9 çalışmaları 23–24 Kasım 2026'da yapılmıştır.**
 
-### Aşama 8 (doğrulama ve özet)
+### Aşama 8: ileri SDN senaryoları, failover/failback ve Recovery Agent (deneyler 21–22 Kasım)
 
 Kod, ham veri ve raporlardan doğrulananlar:
 
 - **Senaryolar:** normal ağ, bağlantı kopması (OVS-1 ↔ OVS-2 Suspend), otomatik kurtarma ve failback; her biri 3 tekrar, `ping -c 100`, toplam 12 deney.
-- **Çalışan mekanizma:** `LINK_DOWN → LINK_FAILURE → ALTERNATIVE_PATH → FLOW_INSTALLED → PATH_ACTIVE` zinciri; Controller iç süresi 7,5–18,5 ms (uçtan uca kesinti değildir). Başarılı bağlantı kopması denemelerinde kullanıcı 2 ve 5 paketlik kesinti yaşamıştır. Failback günlüğü (`FAILBACK_PENDING → START → COMPLETE`, `removed=32/32`) ön denemelerde ve sonraki ek denemelerde görülmüştür.
+- **Recovery Agent:** arıza anında alternatif yol için yol boyunca MAC'e özgü OpenFlow akışları kurar; bağlantı 10 sn kararlı kalınca akışları siler ve normal yönlendirmeye döner (failback). Otomatik kurtarma deneylerinin state kopyalarında oturum `IDLE` olduğundan, bu senaryolardaki düşük kayıp Recovery Agent'a atfedilememiştir.
+- **Çalışan mekanizma (failover):** `LINK_DOWN → LINK_FAILURE → ALTERNATIVE_PATH → FLOW_INSTALLED → PATH_ACTIVE` zinciri; Controller iç süresi 7,5–18,5 ms (uçtan uca kesinti değildir). Başarılı bağlantı kopması denemelerinde kullanıcı 2 ve 5 paketlik kesinti yaşamıştır. Failback günlüğü (`FAILBACK_PENDING → START → COMPLETE`, `removed=32/32`) ön denemelerde ve sonraki ek denemelerde görülmüştür.
 - **Sonuç:** analiz programına göre 6 `BASARILI`, 6 `BASARISIZ`. Sorunlu denemeler: `normal_t3` (arıza yokken %64 kayıp) ve `baglanti_kopmasi_t2` (%70 kayıp, iletişim geri gelmedi; topoloji `edge_count=0`, `NO_ALTERNATIVE_PATH`).
 - **Kanıtlanamayanlar:** Recovery Agent'ın kullanıcıdaki kaybı azalttığı; 12 deneyin state kopyalarında `FAILBACK_COMPLETE` yoktur.
 - **Testler:** 27 analiz aracı testi ve 41 ajan/runtime testi geçmektedir (bu hafta toplam 90 testin parçası).
@@ -398,7 +399,7 @@ Kod, ham veri ve raporlardan doğrulananlar:
 
 - **Altyapı:** [`utils/dataset_collector.py`](utils/dataset_collector.py) Monitoring Agent'ın ürettiği `PORT_METRICS` olaylarını 31 sütunlu CSV'ye yazar (varsayılan kapalı, `SDN_DATASET=1` ile açılır, hata durumunda Controller'ı etkilemez); [`utils/dataset_labels.py`](utils/dataset_labels.py) deneyleri doğrulanmış anotasyon aralıklarıyla etiketler. Controller'da yalnızca guard'lı import ve toplayıcıyı kuran birkaç satır eklenmiştir; ajan kodlarına dokunulmamıştır.
 - **Kimliklendirme ve etiketleme:** her deneye `experiment_id` verilmiş, etiketler anotasyon dosyalarıyla (`datasets/annotations_*.csv`) ve kanıt türüyle atanmıştır. Trafiğin sıfır olması veya LLDP kaybı arıza kanıtı sayılmaz.
-- **Dört senaryo, 6373 kayıt:**
+- **Dört senaryo (NORMAL/LOAD/CONGESTION/FAILURE), 6373 etiketli kayıt:**
 
 | Senaryo | Kayıt | Gözlem |
 |:--|--:|:--|
@@ -408,7 +409,7 @@ Kod, ham veri ve raporlardan doğrulananlar:
 | FAILURE | 295 | Bağlantı yaklaşık 25 sn kontrollü kapatıldı; `link_up=0`, `admin_up=0` kaydedildi |
 | **Toplam** | **6373** | 4 Open vSwitch, 31 sütun |
 
-- **Kalite kontrolü:** tekrarlanan zaman-switch-port anahtarı 0; `throughput_mbps` %100 dolu; `latency_ms`, `e2e_loss_percent`, `declared_load_mbps` %100 boş; sınıflar dengesiz, her sınıf tek deneyle temsil ediliyor.
+- **Veri kalitesi analizi:** tekrarlanan zaman-switch-port anahtarı 0; `throughput_mbps` %100 dolu; `latency_ms`, `e2e_loss_percent`, `declared_load_mbps` %100 boş; sınıflar dengesiz, her sınıf tek deneyle temsil ediliyor.
 - **Testler:** `pytest -q tests/ deneyler/tests/` → **90 başarılı**, 0 başarısız, 2 bağımlılık uyarısı (22 test veri toplayıcıya aittir). Python sözdizimi kontrolü temiz.
 - **Çıktılar:** [`datasets/stage9_birlesik_etiketli.csv`](datasets/stage9_birlesik_etiketli.csv) (≈1,4 MB), [`datasets/stage9_kalite_raporu.txt`](datasets/stage9_kalite_raporu.txt), [`deneyler/ASAMA_9_VERI_SETI_RAPORU.md`](deneyler/ASAMA_9_VERI_SETI_RAPORU.md).
 - **Kapsam sınırı:** yapay zekâ modeli eğitilmemiştir; Aşama 10'a geçilmemiştir.
@@ -446,9 +447,9 @@ Aşağıdaki çalışmaların varlığı depodaki dosyalar veya belgelerle deste
 - **WEB → DNS → DB servis zinciri ve MariaDB sorgu doğrulaması:** önceki README sürümünde belirtilmişti; bu oturumda yeniden doğrulanmadı.
 - **2-13 Kasım Controller oturumları:** yalnızca günlük başlıkları vardır.
 - **22 Kasım 15:04-15:33 ek denemeler:** `runtime/state.json` içinde `PATH_ACTIVE`, `FAILBACK_START` ve `FAILBACK_COMPLETE` adımları olan incident'lar bulunur; bunların hangi amaçla yapıldığı kayıtlı değildir ve 12 deneyin parçası değildir.
-- **`datasets/` klasörü:** 22 Kasım itibarıyla boştu; 23-24 Kasım'da Aşama 9 verileriyle dolduruldu (bkz. Hafta 10).
+- **`datasets/` klasörü:** 22 Kasım itibarıyla boştu; 23-24 Kasım'da Aşama 9 verileriyle dolduruldu (bkz. "23–24 Kasım 2026" bölümü).
 
-## Projenin mevcut durumu (22 Kasım 2026; Aşama 9 için bkz. Hafta 10 ve README bölüm 19)
+## Projenin mevcut durumu (22 Kasım 2026; Aşama 9 için bkz. "23–24 Kasım 2026" bölümü ve README bölüm 19)
 
 **Tamamlananlar:** Aşama 0-7.7 (kampüs ağı, SDN omurgası, dinamik topoloji, dört ajan, EventBus, self-healing, failback, dashboard ve Sunum Modu); Aşama 8 ölçüm altyapısı ve 12 deneyin tamamı; Aşama 8 sonuç raporu; 68 offline test (41 + 27) geçiyor.
 
