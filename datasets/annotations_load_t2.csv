@@ -1,0 +1,2 @@
+experiment_id,start_utc,end_utc,label,evidence_type,evidence_note
+stage9_load_t2,2026-11-23T17:45:25Z,2026-11-23T17:46:17Z,LOAD,traffic_generator,"VPCS ping 600 paket, 50 ms aralik, 1200 bayt; kullanici paket kaybi bildirmedi"

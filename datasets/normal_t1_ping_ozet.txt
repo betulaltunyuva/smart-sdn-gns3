@@ -1,0 +1,10 @@
+ASAMA 9 - NORMAL PING OZETI
+Gonderilen paket: 300
+Basarili paket: 298
+Kayip paket: 2
+Kayip orani: %0.67
+Ortalama RTT: 37.065 ms
+Medyan RTT: 7.353 ms
+P95 RTT: 110.756 ms
+Maksimum RTT: 3286.714 ms
+Kayip paket numaralari: [131, 177]

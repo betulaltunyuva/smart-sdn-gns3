@@ -76,6 +76,13 @@ try:
 except ImportError:
     RuntimeStateWriter = None
 
+# Aşama 9.2: isteğe bağlı CSV veri seti toplayıcı (SDN_DATASET=1 ile açılır;
+# varsayılan kapalı). Yüklenemezse controller etkilenmez.
+try:
+    from utils.dataset_collector import DatasetCollector
+except ImportError:
+    DatasetCollector = None
+
 
 class RecoveryFlowOps(object):
     """Aşama 6.5: RecoveryAgent'a verilen MİNİMUM OpenFlow yeteneği.
@@ -221,6 +228,15 @@ class SDNController(app_manager.OSKenApp):
             except Exception:
                 self.logger.exception("Runtime state yazıcısı başlatılamadı "
                                       "(dashboard verisi olmayacak)")
+        # Aşama 9.2: veri seti toplayıcı (yalnızca gözlemci, varsayılan kapalı)
+        self.dataset_collector = None
+        if DatasetCollector is not None:
+            try:
+                self.dataset_collector = DatasetCollector.from_env(
+                    self.event_bus, self.logger)
+            except Exception:
+                self.logger.exception("Veri seti toplayıcı başlatılamadı "
+                                      "(toplama olmayacak)")
         # Aşama 6.2: aktif switchlerden periyodik port istatistiği iste
         self.stats_thread = hub.spawn(self._stats_loop)
         self.logger.info("SDN Controller başlatıldı (OpenFlow 1.3)")

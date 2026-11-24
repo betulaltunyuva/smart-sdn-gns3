@@ -1,0 +1,2 @@
+experiment_id,start_utc,end_utc,label,evidence_type,evidence_note
+stage9_normal_t1,2026-11-23T16:37:30Z,2026-11-23T16:43:59Z,NORMAL,baseline_no_fault,Ariza veya yuk enjekte edilmedi; 8 ISL portunun tamaminda 71/71 UP; PC1 ping 2/300 kayip (%0.67). Paket kaybi nedeni bilinmiyor.

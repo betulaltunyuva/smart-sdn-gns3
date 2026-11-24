@@ -1,0 +1,2 @@
+experiment_id,start_utc,end_utc,label,evidence_type,evidence_note
+stage9_congestion_t1,2026-11-24T10:01:12Z,2026-11-24T10:03:23Z,CONGESTION,e2e_loss,2 Mbps TBF; PC1 ping 3/300 kayip (%1); tc dropped 199; deney duzeyi kanit

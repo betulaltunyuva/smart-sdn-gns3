@@ -1,0 +1,2 @@
+experiment_id,start_utc,end_utc,label,evidence_type,evidence_note
+stage9_failure_t1,2026-11-24T10:18:40Z,2026-11-24T10:19:05Z,FAILURE,port_admin_down,OVS-1 eth1 kontrollu olarak kapatildi; link_up=0 ve admin_up=0 kaydedildi; deney duzeyinde ariza kaniti

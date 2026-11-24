@@ -1,0 +1,46 @@
+ASAMA 9 - VERI KALITESI RAPORU
+=============================================
+Toplam kayit: 6373
+Toplam sutun: 31
+Etiket dagilimi: {'NORMAL': 4189, 'LOAD': 590, 'CONGESTION': 1299, 'FAILURE': 295}
+
+BOS ALAN ORANLARI:
+timestamp_utc: %0.00 bos
+experiment_id: %0.00 bos
+label: %0.00 bos
+label_source: %0.00 bos
+dpid: %0.00 bos
+dpid_hex: %0.00 bos
+port_no: %0.00 bos
+port_name: %0.00 bos
+link_up: %0.00 bos
+admin_up: %0.00 bos
+isl_port: %86.44 bos
+interval_sec: %0.00 bos
+rx_bytes: %0.00 bos
+tx_bytes: %0.00 bos
+rx_packets: %0.00 bos
+tx_packets: %0.00 bos
+rx_errors: %0.00 bos
+tx_errors: %0.00 bos
+rx_dropped: %0.00 bos
+tx_dropped: %0.00 bos
+rx_bytes_per_sec: %0.00 bos
+tx_bytes_per_sec: %0.00 bos
+rx_mbps: %0.00 bos
+tx_mbps: %0.00 bos
+throughput_mbps: %0.00 bos
+rx_pps: %0.00 bos
+tx_pps: %0.00 bos
+packet_rate_pps: %0.00 bos
+latency_ms: %100.00 bos
+e2e_loss_percent: %100.00 bos
+declared_load_mbps: %100.00 bos
+
+BILINEN SINIRLILIKLAR:
+- Latency ve e2e loss CSV icinde olculmemis.
+- Sinif dagilimlari dengesiz.
+- Her sinif tek deney oturumuyla temsil ediliyor.
+- Etiketler deney araligi duzeyinde verilmis.
+- Bagimsiz tekrar deneyleri gereklidir.
+- Model egitiminde experiment_id ve label_source ozellik olarak kullanilmamali.

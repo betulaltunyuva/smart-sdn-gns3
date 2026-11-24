@@ -7,6 +7,9 @@ venv/
 logs/
 *.log
 datasets/*.csv
+# Aşama 9: yalnızca birleşik veri seti (~1.4 MB) ve küçük anotasyonlar paylaşılır; ham/ara CSV'ler yerelde kalır
+!datasets/stage9_birlesik_etiketli.csv
+!datasets/annotations_*.csv
 
 # IDE / editor
 .vscode/

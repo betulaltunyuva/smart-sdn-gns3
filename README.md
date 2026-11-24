@@ -5,11 +5,13 @@
 ![OpenFlow](https://img.shields.io/badge/OpenFlow-1.3-2563EB)
 ![Controller](https://img.shields.io/badge/Controller-OS--Ken-0D9488)
 ![Python](https://img.shields.io/badge/Python-3.x-3776AB)
-![Durum](https://img.shields.io/badge/Durum-A%C5%9Fama%208%20deneyleri%20tamamland%C4%B1-16A34A)
+![Durum](https://img.shields.io/badge/Durum-A%C5%9Fama%209%20veri%20toplama%20tamamland%C4%B1-16A34A)
 
 Smart SDN, bir omurga bağlantısı arızalandığında bunu Controller'ın otomatik tespit etmesini, kalan topolojide alternatif bir yol hesaplamasını, bu yolu OpenFlow kurallarıyla etkinleştirmesini ve bağlantı düzeldiğinde normal yönlendirmeye kontrollü biçimde dönmesini hedefleyen bir bitirme projesidir. Sistem GNS3 laboratuvarında çalışır; sonuçlar gerçek ağ ortamı için garanti değildir.
 
 > **Dürüst özet.** Mekanizma (arıza onayı, alternatif yol, akış kurulumu, failback) çalışmaktadır ve canlı olarak gösterilmiştir. Aşama 8'de yapılan 12 ölçümlü deneyde ise sonuçlar karışıktır: 6 deney analiz programının ölçütlerine göre `BASARILI`, 6 deney `BASARISIZ` bulunmuştur; bir normal ağ denemesinde %64, bir bağlantı kopması denemesinde %70 paket kaybı yaşanmıştır. Ayrıntılar [Aşama 8 bölümünde](#16-aşama-8-performans-deneyleri) ve [sonuç raporunda](deneyler/ASAMA_8_SONUC_RAPORU.md) yer alır.
+>
+> **Güncel durum (24 Kasım 2026).** Aşama 9 kapsamında dört ağ durumu (NORMAL, LOAD, CONGESTION, FAILURE) için 6373 kayıtlık etiketli bir port-metrik veri seti toplanmıştır ([bölüm 19](#19-bu-hafta-aşama-8-özeti-ve-aşama-9-veri-toplama)). Bu veri seti henüz bir model eğitmek için yeterli değildir; **yapay zekâ modeli eğitilmemiş, Aşama 10'a geçilmemiştir.**
 
 ---
 
@@ -34,7 +36,7 @@ Smart SDN, bir omurga bağlantısı arızalandığında bunu Controller'ın otom
 17. [Gerçek performans sonuçlarının özeti](#17-gerçek-performans-sonuçlarının-özet-tablosu)
 18. [Performans grafikleri](#18-performans-grafiklerine-bağlantılar)
 19. [Bilinen sorunlar ve sınırlamalar](#19-bilinen-sorunlar-ve-sınırlamalar)
-20. [Gelecek geliştirmeler](#20-gelecek-geliştirmeler)
+20. [Gelecek geliştirmeler](#21-gelecek-geliştirmeler)
 21. [Lisans ve proje bilgileri](#21-lisans-ve-proje-bilgileri)
 
 ---
@@ -47,7 +49,7 @@ Geleneksel ağlarda bir bağlantı kopması, protokol yakınsama süresine bağl
 
 Proje, basit bir SDN laboratuvarından VLAN'larla bölünmüş bir kampüs ağı modeline genişletilmiştir. Kurumsal tarafta access/distribution katmanları, router, NAT, güvenlik kuralları ve sunucular; SDN omurgasında ise dört Open vSwitch bulunur.
 
-> **Önemli ayrım.** Bu sürümde ajanlar **kural ve algoritma tabanlıdır.** Makine öğrenmesi veya yapay zekâ ile anomali tespiti henüz uygulanmamıştır (bkz. [Gelecek geliştirmeler](#20-gelecek-geliştirmeler)).
+> **Önemli ayrım.** Bu sürümde ajanlar **kural ve algoritma tabanlıdır.** Makine öğrenmesi veya yapay zekâ ile anomali tespiti henüz uygulanmamıştır (bkz. [Gelecek geliştirmeler](#21-gelecek-geliştirmeler)). Aşama 9'da yalnızca bu bileşen için veri toplama altyapısı kurulmuştur.
 
 ## 2. Temel özellikler
 
@@ -373,7 +375,9 @@ smart-sdn-gns3/
 │   └── topology_manager.py        # NetworkX topolojisi
 ├── utils/
 │   ├── event_bus.py               # Ajan haberleşmesi
-│   └── runtime_state.py           # Atomik canlı durum çıktısı
+│   ├── runtime_state.py           # Atomik canlı durum çıktısı
+│   ├── dataset_collector.py       # Aşama 9: PORT_METRICS -> CSV (varsayılan kapalı)
+│   └── dataset_labels.py          # Aşama 9: çevrimdışı etiketleme
 ├── dashboard/
 │   ├── app.py                     # Detaylı Panel / mod seçimi
 │   ├── presentation.py            # Sunum Modu
@@ -382,7 +386,8 @@ smart-sdn-gns3/
 ├── configs/                       # router (VLAN/NAT/firewall), dns, web, db
 ├── gns3/
 │   └── Smart_SDN_MultiAgent_v2_Work.gns3
-├── tests/                         # 41 offline test (ajanlar + runtime)
+├── tests/                         # 63 offline test (ajanlar, runtime, veri toplayıcı)
+├── datasets/                      # Aşama 9: birleşik etiketli veri seti, anotasyonlar, kalite raporu
 ├── deneyler/                      # Aşama 8: araçlar, ham veri, sonuçlar, rapor
 │   ├── ping_analyzer.py           # Ping/pcap analizi
 │   ├── experiment_runner.py       # Plan, şablon, state kopyası, CSV/SVG
@@ -392,7 +397,9 @@ smart-sdn-gns3/
 │   ├── sonuclar/                  # CSV ve 5 SVG grafik
 │   ├── README.md                  # Deney aracı kılavuzu
 │   ├── ASAMA_8_DENEY_SONUCLARI.md # Aşama 8.1-8.4 ön denemeleri
-│   └── ASAMA_8_SONUC_RAPORU.md    # 12 deneyin akademik sonuç raporu
+│   ├── ASAMA_8_SONUC_RAPORU.md    # 12 deneyin akademik sonuç raporu
+│   ├── ASAMA_9_VERI_SETI_RAPORU.md # Aşama 9 teknik raporu
+│   └── ASAMA_8_9_HAFTALIK_SUNUM_OZETI.md # Sunum konuşma metni
 ├── LICENSE                        # MIT lisansı
 ├── start_sdn.sh                   # SDN başlangıç otomasyonu
 ├── start_dashboard.sh             # Dashboard başlatıcı
@@ -400,11 +407,11 @@ smart-sdn-gns3/
 └── README.md
 ```
 
-`logs/`, `runtime/`, `datasets/*.csv`, sanal ortamlar, `*.pcap` ve GNS3 geçici verileri `.gitignore` kapsamındadır. Token, parola ve özel anahtarlar depoya eklenmemelidir. `datasets/` klasörü şu an boştur.
+`logs/`, `runtime/`, `datasets/*.csv` (yalnızca birleşik veri seti ve anotasyonlar istisnadır), sanal ortamlar, `*.pcap` ve GNS3 geçici verileri `.gitignore` kapsamındadır. Token, parola ve özel anahtarlar depoya eklenmemelidir. Ham ve ara veri dosyaları (`datasets/` altında ≈73 MB) yerelde kalır, depoya eklenmez.
 
 ## 14. Test ve doğrulama
 
-Offline testler GNS3'e dokunmaz. Aşağıdaki sonuçlar 22 Kasım 2026'da çalıştırılmıştır.
+Offline testler GNS3'e dokunmaz. Aşağıdaki sonuçlar 24 Kasım 2026'da çalıştırılmıştır.
 
 ```bash
 PYTHONPATH=. python3 tests/test_failure_agent_offline.py
@@ -412,6 +419,9 @@ PYTHONPATH=. python3 tests/test_routing_agent_offline.py
 PYTHONPATH=. python3 tests/test_recovery_agent_offline.py
 PYTHONPATH=. python3 tests/test_runtime_state_offline.py
 python3 -m unittest discover -s deneyler/tests
+PYTHONPATH=. python3 -m unittest tests.test_dataset_collector_offline
+# veya hepsi birlikte:
+python3 -m pytest -q tests/ deneyler/tests/
 ```
 
 | Test dosyası | Test sayısı | Sonuç |
@@ -420,8 +430,9 @@ python3 -m unittest discover -s deneyler/tests
 | `tests/test_routing_agent_offline.py` | 11 | OK |
 | `tests/test_recovery_agent_offline.py` | 17 | OK |
 | `tests/test_runtime_state_offline.py` | 6 | OK |
+| `tests/test_dataset_collector_offline.py` | 22 | OK |
 | `deneyler/tests/test_ping_analyzer.py` | 27 | OK |
-| **Toplam** | **68** | **OK** |
+| **Toplam** | **90** | **OK** (`pytest`: 90 passed, 2 bağımlılık uyarısı) |
 
 Offline test başarısı, gerçek ağdaki performansı veya tüm GNS3 senaryolarını doğrulamaz; canlı sonuçlar için [Aşama 8](#16-aşama-8-performans-deneyleri) bölümüne bakınız.
 
@@ -435,10 +446,10 @@ Offline test başarısı, gerçek ağdaki performansı veya tüm GNS3 senaryolar
 | 6 | Dinamik topoloji, LLDP ve ajan iskeleti (6.1-6.5) | Tamamlandı |
 | 7 | Multi-Agent entegrasyonu, arıza-recovery-failback doğrulaması; 7.7 Sunum Modu | Tamamlandı |
 | 8 | Ölçümlü self-healing deneyleri (8.1-8.4 ön denemeler, 8.5 tekrarlı 12 deney, 8.6 raporlama) | **Deneyler tamamlandı, sonuçlar karışık** |
-| 9 | İzleme metriklerinden veri seti üretimi | Planlandı |
-| 10 | AI / anomali tespit ajanı | Planlandı |
-| 11 | Gelişmiş güvenlik ve politika senaryoları | Planlandı |
-| 12 | Deneysel karşılaştırma ve akademik değerlendirme | Planlandı |
+| 9 | İzleme metriklerinden etiketli veri seti (toplayıcı, etiketleme, 4 senaryo, 6373 kayıt, kalite kontrolü) | **Veri toplama ve etiketleme tamamlandı; latency/e2e kayıp alanları boş, bağımsız tekrar yok** |
+| 10 | AI / anomali tespit ajanı | **Başlanmadı** |
+| 11 | Gelişmiş güvenlik ve politika senaryoları | **Başlanmadı** |
+| 12 | Deneysel karşılaştırma ve akademik değerlendirme | **Başlanmadı** |
 
 ## 16. Aşama 8 performans deneyleri
 
@@ -504,7 +515,82 @@ Okuma notları:
 
 ![Jitter (ms)](deneyler/sonuclar/grafik_jitter_ms.svg)
 
-## 19. Bilinen sorunlar ve sınırlamalar
+## 19. Bu hafta: Aşama 8 özeti ve Aşama 9 veri toplama
+
+*Dönem: 23–24 Kasım 2026.*
+
+### 19.1 Aşama 8'in doğrulanmış özeti
+
+Aşama 8 deneyleri 21–22 Kasım 2026'da yapılmış ve 22 Kasım'da commit edilmiştir (`d42c1b6`); bu hafta bu sonuçlar kod, ham veri ve raporlarla yeniden karşılaştırılmış, yeni deney yapılmamıştır. Doğrulanan durum:
+
+| Konu | Doğrulanan sonuç |
+|:--|:--|
+| Deney sayısı | 12 (4 senaryo x 3 tekrar, 100 ICMP echo); 6 `BASARILI`, 6 `BASARISIZ` |
+| Mekanizma | Arıza → alternatif yol → akış kurulumu zinciri (`LINK_FAILURE → ALTERNATIVE_PATH → FLOW_INSTALLED → PATH_ACTIVE`) günlükte ve state kopyalarında görülür; Controller iç süresi 7,5–18,5 ms |
+| Kullanıcı etkisi | Başarılı bağlantı kopması denemelerinde 2 ve 5 paketlik kesinti; failback denemelerinde 0, 0 ve 7 paket kaybı |
+| Sorunlu sonuçlar | `normal_t3` %64 kayıp (arıza yokken), `baglanti_kopmasi_t2` %70 kayıp (iletişim geri gelmedi, `edge_count=0`) |
+| Açık sorun | LLDP topoloji kararsızlığı; kök neden çözülmedi |
+| Kanıtlanamayanlar | Recovery Agent'ın kullanıcıdaki kaybı azalttığı; 12 deneyin hiçbirinde `FAILBACK_COMPLETE` state kaydı yok |
+
+Ayrıntılar: [bölüm 16–18](#16-aşama-8-performans-deneyleri) ve [`deneyler/ASAMA_8_SONUC_RAPORU.md`](deneyler/ASAMA_8_SONUC_RAPORU.md).
+
+### 19.2 Aşama 9: veri toplama ve etiketleme altyapısı
+
+Aşama 9, Aşama 10'daki olası AI/anomali ajanı için **veri toplama ve etiketleme** aşamasıdır. **Bu aşamada hiçbir yapay zekâ / makine öğrenmesi modeli eğitilmemiştir.** Aşama 10'a geçilmemiştir.
+
+| Bileşen | Görev |
+|:--|:--|
+| [`utils/dataset_collector.py`](utils/dataset_collector.py) | Monitoring Agent'ın EventBus'a yayınladığı `PORT_METRICS` olaylarını (ve `LINK_UP/DOWN`) 31 sütunlu CSV'ye yazan, yalnızca gözlemci toplayıcı. `SDN_DATASET=1` ile açılır, **varsayılan kapalıdır**; yazma hatası Controller'ı etkilemez |
+| [`utils/dataset_labels.py`](utils/dataset_labels.py) | Ham CSV'yi doğrulanmış anotasyon aralıklarıyla çevrimdışı etiketler; `zero_traffic`, `lldp_loss`, `link_removed_event` kanıt olarak reddedilir |
+| [`controller/sdn_controller.py`](controller/sdn_controller.py) | Yalnızca guard'lı import ve toplayıcıyı kuran birkaç satır eklendi; ajanlara dokunulmadı |
+| [`tests/test_dataset_collector_offline.py`](tests/test_dataset_collector_offline.py) | 22 çevrimdışı test |
+| [`datasets/README.md`](datasets/README.md) | Alan sözlüğü, etiketleme yöntemi, kullanım |
+
+Örnek toplama komutu:
+
+```bash
+SDN_DATASET=1 SDN_DATASET_EXPERIMENT=normal_t1 SDN_DATASET_LABEL=UNKNOWN ./start_sdn.sh
+```
+
+### 19.3 Dört sınıflı veri seti
+
+Birleştirilmiş dosya: [`datasets/stage9_birlesik_etiketli.csv`](datasets/stage9_birlesik_etiketli.csv) (≈1,4 MB; 6373 satır, 31 sütun, 4 Open vSwitch). Sayılar dosyadan yeniden hesaplanarak doğrulanmıştır.
+
+| Senaryo | Kayıt | Deney kimliği | Uygulanan koşul ve gözlem |
+|:--|--:|:--|:--|
+| NORMAL | 4189 | `stage9_normal_t1` | Arıza/yük yok; 300 pingden 298'i yanıtlandı (%0,67 kayıp; kayıp seq 131 ve 177); ort. RTT 37,065 ms, medyan 7,353 ms, P95 110,756 ms, maks. 3286,714 ms (yüksek gecikme nedeni bilinmiyor) |
+| LOAD | 590 | `stage9_load_t2` | VPCS ile 600 paket, 50 ms aralık, 1200 bayt; ölçülen en yüksek `throughput_mbps` ≈ 0,338 (hafif yük) |
+| CONGESTION | 1299 | `stage9_congestion_t1` | OVS bağlantısında 2 Mbps TBF sınırı; 300 pingden 3'ü kayıp (%1); `tc` üzerinde 199 düşen paket; en yüksek `throughput_mbps` ≈ 2,08; sınır deney sonunda kaldırıldı |
+| FAILURE | 295 | `stage9_failure_t1` | OVS-1 `eth1` yaklaşık 25 sn kontrollü kapatıldı; port ölçümlerinde `link_up=0`, `admin_up=0` kaydedildi |
+| **Toplam** | **6373** | | |
+
+**Veri kalitesi** ([`datasets/stage9_kalite_raporu.txt`](datasets/stage9_kalite_raporu.txt)):
+
+- Tekrarlanan (zaman, switch, port) anahtarı: 0.
+- `throughput_mbps` tüm satırlarda dolu.
+- `latency_ms`, `e2e_loss_percent` ve `declared_load_mbps` **tüm satırlarda boştur**; ping özetleri port satırlarına eşlenmemiştir.
+- Sınıflar dengesizdir (NORMAL %65,7; FAILURE %4,6) ve her sınıf **tek** deney oturumuyla temsil edilir.
+- Etiketler deney aralığı düzeyindedir, port bazlı arıza kanıtı değildir: FAILURE satırlarının yalnızca 5'inde (kapatılan tek port) `link_up=0` görülür, 290'ında `link_up=1`.
+- `experiment_id` ve `label_source` model özelliği olarak kullanılmamalıdır.
+
+### 19.4 Aşama 9 doğrulamaları ve belirsizlikler
+
+- **Testler:** `python3 -m pytest -q tests/ deneyler/tests/` → **90 başarılı, 0 başarısız, 2 uyarı** (NetworkX/NumPy `np.int` kullanımından kaynaklı bağımlılık uyarıları). Bunların 22'si veri toplayıcı testleridir. Python dosyalarının sözdizimi (`py_compile`) hatasızdır.
+- **FAILURE deneyi:** `controller.log` zaman damgası içermediğinden, aynı Controller oturumunda görülen `ALTERNATIVE_PATH`, `PATH_ACTIVE` ve `FAILBACK_COMPLETE` olayları `stage9_failure_t1` penceresine kesin olarak atfedilememiştir; günlüğün sonunda ise `RECOVERY SKIPPED reason=no_affected_host_traffic` ve çok sayıda `NO_ALTERNATIVE_PATH` kaydı bulunur. FAILURE sırasında paket kaybı yaşanmıştır (ping çıktısı depoya kaydedilmemiştir, kayıp sayısı bilinmiyor); **kesintisiz iletişim iddia edilmemektedir.** Bağlantı açıldıktan sonra iletişimin geri geldiği bu depodaki bir kayıtla doğrulanamamıştır.
+- **LOAD** sınıfı çok hafif bir yüktür (≈0,34 Mbps); yüksek yük davranışını temsil etmez.
+- Veri seti **eğitim için yeterli değildir**: bağımsız tekrar deneyi yoktur.
+- Depoya yalnızca birleştirilmiş veri seti, anotasyonlar ve küçük metin kanıtları eklenmiştir; ≈73 MB'lık ham/ara CSV dosyaları `.gitignore` ile dışarıda tutulur ve yerelde kalır.
+
+### 19.5 Projenin mevcut durumu (24 Kasım 2026)
+
+- **Tamamlanan:** Aşama 0–8 (kural tabanlı self-healing, ölçümlü deneyler, sonuçlar karışık) ve Aşama 9 veri toplama/etiketleme altyapısı ile ilk etiketli veri seti.
+- **Sistem hâlâ kural tabanlıdır;** model eğitilmemiştir.
+- **Aşama 9 eksikleri:** satır bazında gecikme ve uçtan uca kayıp, `declared_load_mbps`, bağımsız tekrar deneyleri, dengeli sınıflar.
+- **Başlanmayan:** Aşama 10–12 (bkz. [bölüm 21](#21-gelecek-geliştirmeler)).
+
+Teknik rapor: [`deneyler/ASAMA_9_VERI_SETI_RAPORU.md`](deneyler/ASAMA_9_VERI_SETI_RAPORU.md). Haftalık özet: [`HAFTALIK_GELISME.md`](HAFTALIK_GELISME.md). Sunum metni: [`deneyler/ASAMA_8_9_HAFTALIK_SUNUM_OZETI.md`](deneyler/ASAMA_8_9_HAFTALIK_SUNUM_OZETI.md).
+
+## 20. Bilinen sorunlar ve sınırlamalar
 
 - **LLDP topoloji kararsızlığı.** Controller günlüğünde ve üç state kopyasında (`baglanti_kopmasi_t2`, `failback_t1`, `otomatik_kurtarma_t1`) topolojinin `edge_count=4`'ten 0'a düştüğü görülmüştür. `edge_count=0` iken Routing Agent yol bulamaz (`NO_ALTERNATIVE_PATH`). Controller yeniden başlatıldığında topoloji yeniden keşfedilebilmiştir; kök neden doğrulanmamıştır.
 - **Normal ağda paket kaybı.** Arıza olmadan %2, %2 ve %64 kayıp ölçülmüştür; nedeni state kopyası olmadığından doğrulanamamıştır.
@@ -518,19 +604,25 @@ Okuma notları:
 - **Laboratuvar ortamı.** GNS3/Docker/VirtualBox sonuçları üretim ortamı için garanti değildir.
 - **Yapay zekâ bileşeni yoktur.**
 
-## 20. Gelecek geliştirmeler
+## 21. Gelecek geliştirmeler
 
 - Pcap ile zaman damgalı ölçüm ve uçtan uca kesinti süresinin doğrudan ölçülmesi.
 - Deney sırasında OVS akış tablosu ve state kaydı alınması; Suspend/Resume anının kaydedilmesi.
 - LLDP kararsızlığının kök neden analizi ve fiziksel kopukluktan ayrıştırılması.
 - Daha fazla tekrar (en az 10), kontrollü başlangıç durumu ve istatistiksel karşılaştırma; Recovery Agent'sız taban çizgisiyle kıyas.
 - Anahtar arızası, farklı bağlantılar ve TCP/UDP yükü senaryoları.
-- Aşama 9-12: izleme metriklerinden veri seti, AI/anomali tespit ajanı, gelişmiş güvenlik ve politika senaryoları, deneysel karşılaştırma.
+- Aşama 9'u tamamlama: `latency_ms` / `e2e_loss_percent` alanlarının zaman damgalı ping/iperf kaydından doldurulması, sınıf başına bağımsız tekrar deneyleri, daha yüksek yük içeren LOAD deneyi.
 
-## 21. Lisans ve proje bilgileri
+### Henüz başlanmayan çalışmalar
+
+- **Aşama 10:** AI / anomali tespit ajanı (model eğitimi, doğrulama, Controller entegrasyonu).
+- **Aşama 11:** Gelişmiş güvenlik ve politika senaryoları.
+- **Aşama 12:** Deneysel karşılaştırma ve akademik değerlendirme.
+
+## 22. Lisans ve proje bilgileri
 
 - **Lisans:** MIT, bkz. [`LICENSE`](LICENSE).
 - **Depo:** <https://github.com/betulaltunyuva/smart-sdn-gns3>
 - **Proje türü:** Bitirme projesi, GNS3 laboratuvar uygulaması.
 - **Haftalık gelişme kayıtları:** [`HAFTALIK_GELISME.md`](HAFTALIK_GELISME.md)
-- **Güncel doküman tarihi:** 22 Kasım 2026
+- **Güncel doküman tarihi:** 24 Kasım 2026
