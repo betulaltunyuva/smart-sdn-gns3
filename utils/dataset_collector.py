@@ -265,6 +265,7 @@ class DatasetCollector(object):
     # ------------------------------------------------------------------
     # PORT_METRICS
     # ------------------------------------------------------------------
+    # CSV satırına dönüştürüyor
     def build_row(self, m, now):
         """Payload'dan CSV satırı (liste) üretir; payload kullanılamazsa
         None. Ölçülmeyen alanlar boş kalır."""
@@ -296,6 +297,7 @@ class DatasetCollector(object):
             values[column] = _float_or_blank(m.get(key))
         return [values[c] for c in COLUMNS]
 
+    # Monitoring Agent'tan gelen ölçümleri alıyor
     def on_port_metrics(self, m):
         if self.disabled or self._writer is None:
             return
@@ -304,7 +306,7 @@ class DatasetCollector(object):
         except Exception:
             self._note_error()
             self.logger.exception("[DATASET] kayıt hatası")
-
+    # Dosyaya kaydeder
     def _record(self, m):
         now = self._clock()
         row = self.build_row(m, now)
